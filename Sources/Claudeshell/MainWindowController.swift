@@ -155,9 +155,10 @@ final class MainWindowController: NSWindowController {
         QuickOpenPanel.present(on: window, projects: store.projects) { [weak self] in self?.select($0) }
     }
 
-    /// Makes a running project the visible one; leaving the previous one clears its waiting state (R13).
+    /// Makes a running project the visible one. Leaving the previous one clears its waiting state, and so
+    /// does selecting the project that is already visible: HP has seen it (R13).
     private func show(_ id: Project.ID) {
-        if let previous = store.selectedID, previous != id { tracker.leave(previous) }
+        if let previous = store.selectedID { tracker.leave(previous) }
         store.select(id)
         refresh()
     }

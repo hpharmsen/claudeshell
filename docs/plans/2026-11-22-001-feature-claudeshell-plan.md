@@ -75,7 +75,7 @@ HP werkt in WezTerm met 27 projecten, elk een workspace met tabs voor shell en C
 **Aandacht**
 
 - R12. Een running tile toont één van drie toestanden: Claude is bezig, Claude wacht op HP, of rustig. 'Wacht op HP' geldt zodra Claude zijn beurt heeft afgerond of een vraag stelt.
-- R13. De toestand 'wacht op HP' vervalt zodra HP in dat project input aan Claude geeft; de tile toont dan bezig. Ze vervalt ook zodra HP het project verlaat voor een ander project; de tile wordt dan rustig.
+- R13. De toestand 'wacht op HP' vervalt zodra HP in dat project input aan Claude geeft; de tile toont dan bezig. Ze vervalt ook zodra HP het project verlaat voor een ander project; de tile wordt dan rustig. Hetzelfde gebeurt als HP het project kiest dat hij al voor zich heeft, bijvoorbeeld met een klik op de geselecteerde tile.
 - R14. In de balk is op zicht te onderscheiden of een tile running of active is, en welke tile geselecteerd is.
 - R15. Gaat een project van bezig naar 'wacht op HP', dan klinkt een kort geluid. Geen Dock-badge, geen macOS-notificatie.
 
