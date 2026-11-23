@@ -174,16 +174,27 @@ final class MainWindowController: NSWindowController {
     }
 
     func stop(_ id: Project.ID) {
+        let next = successor(of: id)
         stopSessions(of: id)
         if store.selectedID == id { store.select(nil) }
-        refresh()
+        showOrRefresh(next)
     }
 
     /// Moves a project out of the bar; a running one is stopped first.
     func deactivate(_ id: Project.ID) {
+        let next = successor(of: id)
         if store.status(of: id) == .running { stopSessions(of: id) }
         store.setStatus(.inactive, for: id)
-        refresh()
+        showOrRefresh(next)
+    }
+
+    /// The running project that takes over when the visible project goes away; asked before it leaves the bar.
+    private func successor(of id: Project.ID) -> Project.ID? {
+        store.selectedID == id ? store.nextRunning(after: id) : nil
+    }
+
+    private func showOrRefresh(_ next: Project.ID?) {
+        if let next { show(next) } else { refresh() }
     }
 
     /// The one place where a running project stops; its summary follows in the background.

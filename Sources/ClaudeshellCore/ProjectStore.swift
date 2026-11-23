@@ -68,6 +68,13 @@ import os
         }
     }
 
+    /// The first running project after this one in bar order, wrapping around; nil when nothing else runs.
+    public func nextRunning(after id: Project.ID) -> Project.ID? {
+        let bar = barProjects.map(\.id)
+        guard let index = bar.firstIndex(of: id) else { return nil }
+        return (bar[(index + 1)...] + bar[..<index]).first { status(of: $0) == .running }
+    }
+
     public var inactiveProjects: [Project] { projects.filter { status(of: $0.id) == .inactive } }
 
     /// Status of a project; an unknown project is inactive.
