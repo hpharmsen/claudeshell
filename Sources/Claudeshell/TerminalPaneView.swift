@@ -22,6 +22,8 @@ final class TerminalPaneView: LocalProcessTerminalView {
         }
     }
     private var keyMonitor: Any?
+    /// True once the shell reports its directory (OSC 7); SwiftTerm then resolves relative links itself.
+    var reportsDirectory = false
 
     init(spec: LaunchSpec) {
         self.spec = spec
@@ -34,10 +36,18 @@ final class TerminalPaneView: LocalProcessTerminalView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
+    /// Claude prints paths relative to the project folder and reports no directory (OSC 7),
+    /// so SwiftTerm would look for them in the folder of the app.
+    override func requestOpenLink(source: TerminalView, request: TerminalLinkRequest) {
+        let isRelativeToPane = !request.isExplicit && !reportsDirectory
+        request.openDefault(isRelativeToPane ? spec.resolvedLink(request.link) : nil)
+    }
+
     /// Starts the process of the spec; a new spec restarts the pane under a new pane id.
     func start(_ newSpec: LaunchSpec? = nil) {
         if let newSpec { spec = newSpec }
         onRestart = nil
+        reportsDirectory = false
         startedAt = Date()
         startProcess(executable: spec.executable, args: spec.args, environment: spec.environment,
                      currentDirectory: spec.directory)

@@ -99,5 +99,7 @@ import SwiftTerm
 
     func sizeChanged(source: LocalProcessTerminalView, newCols: Int, newRows: Int) {}
     func setTerminalTitle(source: LocalProcessTerminalView, title: String) {}
-    func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {}
+    func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {
+        (source as? TerminalPaneView)?.reportsDirectory = directory != nil
+    }
 }

@@ -78,3 +78,18 @@ private func env(_ spec: LaunchSpec) -> [String: String] {
 @Test func environmentOfTheAppDoesNotLeakIntoThePane() {
     #expect(env(spec(.shell, base: base.merging(["SECRET": "x"]) { $1 }))["SECRET"] == nil)
 }
+
+@Test func relativeLinkResolvesAgainstThePaneFolder() throws {
+    let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).path
+    try FileManager.default.createDirectory(atPath: folder + "/docs", withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(atPath: folder) }
+    FileManager.default.createFile(atPath: folder + "/docs/notes.md", contents: nil)
+    let pane = spec(.claude, path: folder)
+    #expect(pane.resolvedLink("docs/notes.md") == folder + "/docs/notes.md")
+    #expect(pane.resolvedLink("docs/notes.md:12:4") == folder + "/docs/notes.md:12:4")
+    #expect(pane.resolvedLink("docs/missing.md") == "docs/missing.md")
+    #expect(pane.resolvedLink("/etc/hosts") == "/etc/hosts")
+    #expect(pane.resolvedLink("~/notes.md") == "~/notes.md")
+    #expect(pane.resolvedLink("https://example.com/docs/notes.md") == "https://example.com/docs/notes.md")
+    #expect(pane.resolvedLink("") == "")
+}

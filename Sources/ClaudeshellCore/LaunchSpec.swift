@@ -36,4 +36,13 @@ public struct LaunchSpec: Equatable, Sendable {
             "CLAUDESHELL_SETTINGS=\(settingsPath)",
         ]
     }
+
+    /// A relative path from the pane's output, made absolute when it names a file in the pane's folder.
+    public func resolvedLink(_ link: String) -> String {
+        guard !link.isEmpty, !link.hasPrefix("/"), !link.hasPrefix("~") else { return link }
+        let path = (directory as NSString).appendingPathComponent(link)
+        // A source location such as 'main.swift:12:4' stays on the link but is not part of the file name.
+        let file = path.replacing(/:[0-9]+(:[0-9]+)?$/, with: "")
+        return FileManager.default.fileExists(atPath: file) ? path : link
+    }
 }
