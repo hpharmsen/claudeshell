@@ -6,6 +6,7 @@ De basis-eenheid in de applicatie is het project. Een project heeft een folder, 
 ## Interface
 De applicatie besstaat uit 1 window, resizable. Standaard is deze gecentreerd en neemt 3/4 van de hoogte en 3/4 van de breedte van het scherm in.
 De bovenste balk is 2 em hoog en heeft tiles voor de verschillende projecten. Deze staan altijd in beeld. Een tile is het icoon van het project met de naam klein eronder. De applicatie zoekt het icoon zelf, in de folder van het project of als favicon van zijn website. Een project zonder icoon toont zijn initialen op de kleur van het project; alleen daar is de kleur nog te zien. De meest rechter tile is een + om een nieuw project toe te voegen. Als de tiles niet meer passen, worden ze smaller.
+Onder de balk staat de projectstrook van het gekozen project: links de links naar live, localhost en de git-repo, de git-stand en de stap in de hp-workflow, rechts een samenvatting in één of twee zinnen van wat er het laatst gedaan is en wat er nog openstaat. De applicatie maakt die samenvatting zelf als een project stopt. De strook opent als een project start en is dicht te klikken, ook met Cmd+I.
 De rest van het window bestaat uit 2 delen. De linker 1/3 is een zsh terminal opgestart in de folder van het gekozen project. De rechter 2/3 draait claude --dangerously-skip-permissions in diezelfde folder.
 De lijn tussen die twee moet vershuifbaar zijn zodat links of rechts groter gemaakt kan worden.
 

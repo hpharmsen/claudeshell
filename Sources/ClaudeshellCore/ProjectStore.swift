@@ -8,7 +8,11 @@ import os
     public let fileExisted: Bool
     /// All projects, in the order they were added.
     public private(set) var projects: [Project] = []
-    public private(set) var selectedID: Project.ID?
+    public private(set) var selectedID: Project.ID? {
+        didSet { if selectedID != oldValue { rememberSelection() } }
+    }
+    /// The project that was in view when the app last ran, if it is still in the bar.
+    public private(set) var lastShownID: Project.ID?
 
     private var statuses: [Project.ID: ProjectStatus] = [:]
     private let fileURL: URL
@@ -46,6 +50,9 @@ import os
             let records = try JSONDecoder().decode([Record].self, from: Data(contentsOf: fileURL))
             projects = records.map(\.project)
             records.filter { $0.status == .inactive }.forEach { statuses[$0.project.id] = .inactive }
+            // No file simply means that no project was in view.
+            let shown = (try? String(contentsOf: lastShownURL, encoding: .utf8)).flatMap(UUID.init(uuidString:))
+            lastShownID = shown.flatMap { status(of: $0) == .inactive ? nil : $0 }
         } catch {
             Self.log.error("Unreadable \(fileURL.path, privacy: .public): \(error)")
             let corruptURL = fileURL.deletingPathExtension().appendingPathExtension("corrupt.json")
@@ -66,6 +73,13 @@ import os
             let order = $0.name.localizedStandardCompare($1.name)
             return order == .orderedSame ? $0.path < $1.path : order == .orderedAscending
         }
+    }
+
+    /// The first running project after this one in bar order, wrapping around; nil when nothing else runs.
+    public func nextRunning(after id: Project.ID) -> Project.ID? {
+        let bar = barProjects.map(\.id)
+        guard let index = bar.firstIndex(of: id) else { return nil }
+        return (bar[(index + 1)...] + bar[..<index]).first { status(of: $0) == .running }
     }
 
     public var inactiveProjects: [Project] { projects.filter { status(of: $0.id) == .inactive } }
@@ -133,14 +147,29 @@ import os
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         var website: String?
         if !trimmed.isEmpty {
-            let lowered = trimmed.lowercased()
-            let url = lowered.hasPrefix("http://") || lowered.hasPrefix("https://") ? trimmed : "https://" + trimmed
-            guard !url.contains(" "), URL(string: url)?.host?.contains(".") == true else { return false }
+            guard let url = Self.normalizedURL(trimmed, localAllowed: false) else { return false }
             website = url
         }
         projects[index].website = website
         save()
         return true
+    }
+
+    /// Sets the user's own link of one kind; blank text stores 'cleared', text without a valid host is refused.
+    @discardableResult public func setLink(_ text: String, kind: LinkKind, for id: Project.ID) -> Bool {
+        guard let index = index(of: id) else { return false }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let link = trimmed.isEmpty ? "" : Self.normalizedURL(trimmed, localAllowed: true) else { return false }
+        projects[index].linkOverrides = (projects[index].linkOverrides ?? [:]).merging([kind: link]) { $1 }
+        save()
+        return true
+    }
+
+    /// Forgets the user's own links, so the app finds them again.
+    public func clearLinkOverrides(for id: Project.ID) {
+        guard let index = index(of: id) else { return }
+        projects[index].linkOverrides = nil
+        save()
     }
 
     public func setIconState(_ state: IconState?, for id: Project.ID) {
@@ -171,6 +200,33 @@ import os
     }
 
     private static let log = Logger(subsystem: "Claudeshell", category: "ProjectStore")
+
+    /// Trimmed text as URL, or nil without a valid host; no scheme gives 'https://', or 'http://' for an allowed local host.
+    private static func normalizedURL(_ trimmed: String, localAllowed: Bool) -> String? {
+        let lowered = trimmed.lowercased()
+        let isLocal = localAllowed && ["localhost", "127.0.0.1"].contains(String(lowered.prefix { !":/".contains($0) }))
+        let url = lowered.hasPrefix("http://") || lowered.hasPrefix("https://") ? trimmed
+            : (isLocal ? "http://" : "https://") + trimmed
+        guard !url.contains(" "), let host = URL(string: url)?.host?.lowercased(),
+              host.contains(".") || localAllowed && host == "localhost" else { return nil }
+        return url
+    }
+
+    /// Next to the projects file; the selection itself is never part of that file.
+    private var lastShownURL: URL { fileURL.deletingLastPathComponent().appendingPathComponent("last-shown") }
+
+    /// Writes which project is in view, or removes the file when none is, so the next start can show it again.
+    private func rememberSelection() {
+        do {
+            if let selectedID {
+                try selectedID.uuidString.write(to: lastShownURL, atomically: true, encoding: .utf8)
+            } else if FileManager.default.fileExists(atPath: lastShownURL.path) {
+                try FileManager.default.removeItem(at: lastShownURL)
+            }
+        } catch {
+            Self.log.error("Could not remember the shown project: \(error)")
+        }
+    }
 
     private func index(of id: Project.ID) -> Int? { projects.firstIndex { $0.id == id } }
 }

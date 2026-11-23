@@ -15,6 +15,9 @@ import AppKit
             item("Plak", #selector(NSText.paste(_:)), "v"),
             item("Selecteer alles", #selector(NSText.selectAll(_:)), "a"),
         ]))
+        menu.addItem(submenu("Beeld", [
+            item("Projectstrook", #selector(MainWindowController.toggleStrip(_:)), "i", target: target),
+        ]))
         // Cmd+1...0 select tile 1...10, Cmd+Option+1...0 tile 11...20 (R16); hidden but active.
         let tiles = (0..<20).map { index in
             let tile = item("Tile \(index + 1)", #selector(MainWindowController.selectTile(_:)),

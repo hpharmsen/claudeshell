@@ -47,6 +47,52 @@ import Testing
     #expect(project.iconState == nil)
 }
 
+// MARK: Link overrides
+
+@Test func projectWithLinkOverridesRoundTripsThroughJSON() throws {
+    let overrides: [LinkKind: String] = [.live: "https://voorbeeld.nl", .localhost: "http://localhost:8003", .git: ""]
+    let project = Project(name: "Voorbeeld", path: "/p/voorbeeld", color: "#3B82F6", linkOverrides: overrides)
+    let decoded = try JSONDecoder().decode(Project.self, from: JSONEncoder().encode(project))
+    #expect(decoded == project)
+    #expect(decoded.linkOverrides == overrides)
+}
+
+@Test func linkOverridesEncodeAsObjectKeyedByKind() throws {
+    let project = Project(name: "Voorbeeld", path: "/p/voorbeeld", color: "#3B82F6",
+                          linkOverrides: [.live: "https://voorbeeld.nl", .localhost: "", .git: "https://voorbeeld.nl/repo"])
+    let object = try JSONSerialization.jsonObject(with: JSONEncoder().encode(project)) as? [String: Any]
+    #expect(object?["linkOverrides"] as? [String: String]
+        == ["live": "https://voorbeeld.nl", "localhost": "", "git": "https://voorbeeld.nl/repo"])
+}
+
+@Test func linkOverridesDecodeFromObjectKeyedByKind() throws {
+    let json = """
+        {"id": "11111111-2222-3333-4444-555555555555", "name": "Voorbeeld", "path": "/p/voorbeeld", "color": "#3B82F6",
+         "linkOverrides": {"live": "https://voorbeeld.nl", "git": ""}}
+        """
+    let decoded = try JSONDecoder().decode(Project.self, from: Data(json.utf8))
+    #expect(decoded.linkOverrides == [.live: "https://voorbeeld.nl", .git: ""])
+}
+
+@Test func projectWithoutLinkOverridesDecodesWithTheFieldEmpty() throws {
+    let json = """
+        {"id": "11111111-2222-3333-4444-555555555555", "name": "Voorbeeld", "path": "/p/voorbeeld", "color": "#3B82F6",
+         "website": "https://voorbeeld.nl", "iconState": "searched"}
+        """
+    let decoded = try JSONDecoder().decode(Project.self, from: Data(json.utf8))
+    #expect(decoded.name == "Voorbeeld")
+    #expect(decoded.website == "https://voorbeeld.nl")
+    #expect(decoded.linkOverrides == nil)
+}
+
+@Test func newProjectHasNoLinkOverrides() {
+    #expect(Project(name: "a", path: "/a", color: "#000000").linkOverrides == nil)
+}
+
+@Test func linkKindHasThreeValues() {
+    #expect(LinkKind.allCases == [.live, .localhost, .git])
+}
+
 // MARK: Initials
 
 @Test(arguments: [
