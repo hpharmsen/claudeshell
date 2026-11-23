@@ -13,6 +13,8 @@ public struct Transcript: Equatable, Sendable {
     public let awaySummary: String?
     public let fileName: String?
     public let lastMessageUUID: String?
+    /// When the last real message was written, in ISO 8601.
+    public let lastMessageTimestamp: String?
     /// How many bytes of conversation files were read to get here.
     public let bytesRead: Int
 
@@ -168,11 +170,12 @@ public struct TranscriptReader: Sendable {
         // All timestamps are ISO 8601 in UTC, so they sort as text.
         let latest = candidates.compactMap { candidate in candidate.timestamp.map { (candidate.file, $0) } }.max { $0.1 < $1.1 }
         guard let file = latest?.0 else {
-            return Transcript(turns: [], awaySummary: nil, fileName: nil, lastMessageUUID: nil, bytesRead: bytesRead)
+            return Transcript(turns: [], awaySummary: nil, fileName: nil, lastMessageUUID: nil, lastMessageTimestamp: nil,
+                              bytesRead: bytesRead)
         }
         let scan = scan(file, maxTurns: Self.maxTurns)
         return Transcript(turns: scan.turns.reversed(), awaySummary: scan.awaySummary, fileName: file.lastPathComponent,
-                          lastMessageUUID: scan.uuid, bytesRead: bytesRead + scan.bytesRead)
+                          lastMessageUUID: scan.uuid, lastMessageTimestamp: scan.timestamp, bytesRead: bytesRead + scan.bytesRead)
     }
 
     /// The conversation files directly in a folder, the last modified first.

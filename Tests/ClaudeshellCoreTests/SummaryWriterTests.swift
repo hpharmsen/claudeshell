@@ -102,10 +102,12 @@ private struct Fixture {
         try await Subprocess.run("/usr/bin/git", arguments, folder, nil, 10)
     }
 
-    func commit(_ file: String, subject: String) async throws {
+    /// Commits a file; the default date lies before the made-up conversation, which is of 1 January 2026.
+    func commit(_ file: String, subject: String, date: String = "2025-12-31T12:00:00Z") async throws {
         try Data(file.utf8).write(to: folder.appendingPathComponent(file))
         try await git("add", "-A")
-        try await git("commit", "-m", subject)
+        let environment = ProcessInfo.processInfo.environment.merging(["GIT_COMMITTER_DATE": date]) { $1 }
+        _ = try await Subprocess.run("/usr/bin/git", ["commit", "-m", subject], folder, nil, 10, environment: environment)
     }
 
     /// Appends lines to a conversation file, creating it when it is missing.
@@ -213,6 +215,16 @@ private struct Fixture {
     try fixture.say(system(3, subtype: "away_summary", content: "Tussenstand: de knop is klaar."))
     _ = await fixture.update()
     #expect(fixture.input.contains("Tussenstand: de knop is klaar."))
+}
+
+@Test func awaySummaryFromBeforeTheLastCommitStaysOut() async throws {
+    let fixture = try await Fixture()
+    try fixture.say(system(3, subtype: "away_summary", content: "Tussenstand: de knop is klaar, niets gecommit."))
+    try await fixture.commit("rand.css", subject: "maak de rand rood", date: "2026-01-01T11:00:00Z")
+    _ = await fixture.update()
+    #expect(!fixture.input.contains("Tussenstand"))
+    #expect(fixture.input.contains("maak de rand rood"))
+    #expect(fixture.input.contains("alles is gecommit"))
 }
 
 @Test func planAndHandoffAreCutAtFourThousandCharacters() async throws {
