@@ -26,12 +26,6 @@ struct TilesBarView: View {
                          attention: tracker.state(of: project.id))
                     .onTapGesture { actions.select(project.id) }
                     .contextMenu { contextMenu(for: project) }
-                    .draggable(project.id.uuidString)
-                    .dropDestination(for: String.self) { items, _ in
-                        guard let id = items.first.flatMap(UUID.init(uuidString:)) else { return false }
-                        store.move(id, toBarIndex: index)
-                        return true
-                    }
             }
             Spacer(minLength: 0)
             Menu {

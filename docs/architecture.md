@@ -20,7 +20,7 @@ The icon is drawn by `scripts/make-icon.swift`; `Support/AppIcon.icns` is its ou
 | File | What it holds |
 |---|---|
 | `Project.swift` | Shared types: `Project` with its initials, `ProjectStatus`, `IconState`, `PaneID`, `PaneKind`, `AttentionState`, and the start frame of the window |
-| `ProjectStore.swift` | The ordered project list, status per project, selection, and storage |
+| `ProjectStore.swift` | The project list, the alphabetical bar order, status per project, selection, and storage |
 | `ColorPalette.swift` | 16 fixed pastel tile colours and the choice of the next free one |
 | `IconFinder.swift` | The candidate icon files in a project folder, best first |
 | `DomainGuesser.swift` | The domains that are literally in a project: folder name, `CNAME`, `package.json`, `pyproject.toml`, `ALLOWED_HOSTS` |
@@ -40,7 +40,7 @@ The icon is drawn by `scripts/make-icon.swift`; `Support/AppIcon.icns` is its ou
 |---|---|
 | `main.swift`, `AppDelegate.swift` | Start-up: store, first-start import, hook settings, events watcher, sound |
 | `MainWindowController.swift` | The window, the split with two slots, and every user action |
-| `TilesBarView.swift` | SwiftUI tiles bar with context menu, drag and drop, inactive dropdown and + |
+| `TilesBarView.swift` | SwiftUI tiles bar with context menu, inactive dropdown and + |
 | `IconStore.swift` | The loaded icon per project, the search rounds, and the icon actions of the context menu |
 | `SessionManager.swift` | Starts, stops and restarts the panes of running projects |
 | `TerminalPaneView.swift`, `TerminalTheme.swift` | A SwiftTerm view per pane with the bundled fonts; the shell pane has the dark WezTerm colours, the Claude pane a light palette |
@@ -127,7 +127,7 @@ The context menu of a tile corrects the result. An image HP chooses gives `custo
 
 | Path | Content |
 |---|---|
-| `~/Library/Application Support/Claudeshell/projects.json` | Projects in bar order, inactive ones last, with `status` active or inactive, and optionally `website` and `iconState` (`searched`, `custom` or `removed`). Running and the selection are never stored. |
+| `~/Library/Application Support/Claudeshell/projects.json` | Projects in the order they were added, with `status` active or inactive, and optionally `website` and `iconState` (`searched`, `custom` or `removed`). Running and the selection are never stored. |
 | `~/Library/Application Support/Claudeshell/icons/` | The icon of a project as `<project id>.png` |
 | `~/Library/Application Support/Claudeshell/projects.corrupt.json` | An unreadable `projects.json`, set aside |
 | `~/Library/Application Support/Claudeshell/hooks.json` | The generated hook settings, rewritten at every start |

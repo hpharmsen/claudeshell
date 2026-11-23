@@ -85,12 +85,12 @@ private func tempFileURL() -> URL {
     #expect(store.selectedID == projects[1].id)
 }
 
-@MainActor @Test func addingInactiveProjectAgainMakesItActiveAtEndOfBar() {
+@MainActor @Test func addingInactiveProjectAgainPutsItBackInTheBar() {
     let (store, projects) = makeStore("a", "b", "c")
     store.setStatus(.inactive, for: projects[0].id)
     #expect(store.add(path: "/p/a") == projects[0])
     #expect(store.status(of: projects[0].id) == .active)
-    #expect(store.barProjects == [projects[1], projects[2], projects[0]])
+    #expect(store.barProjects == projects)
     #expect(store.inactiveProjects.isEmpty)
 }
 
@@ -118,42 +118,32 @@ private func tempFileURL() -> URL {
 
 // MARK: Order
 
-@MainActor @Test func moveFromThirdToFirstShiftsRestAndSurvivesReload() {
+@MainActor @Test func barIsAlphabeticalWhateverTheOrderOfAdding() {
+    let (store, _) = makeStore("delta", "Alfa", "charlie", "Bravo")
+    #expect(store.barProjects.map(\.name) == ["Alfa", "Bravo", "charlie", "delta"])
+}
+
+@MainActor @Test func barIsAlphabeticalAfterReload() {
     let url = tempFileURL()
-    let (store, projects) = makeStore("a", "b", "c", "d", at: url)
-    store.move(projects[2].id, toBarIndex: 0)
-    let expected = [projects[2], projects[0], projects[1], projects[3]]
-    #expect(store.barProjects == expected)
-    #expect(ProjectStore(fileURL: url).barProjects == expected)
+    _ = makeStore("delta", "Alfa", "charlie", at: url)
+    #expect(ProjectStore(fileURL: url).barProjects.map(\.name) == ["Alfa", "charlie", "delta"])
 }
 
-@MainActor @Test func moveForwardLandsOnTargetIndex() {
-    let (store, projects) = makeStore("a", "b", "c")
-    store.move(projects[0].id, toBarIndex: 1)
-    #expect(store.barProjects == [projects[1], projects[0], projects[2]])
+@MainActor @Test func renamedProjectMovesToItsAlphabeticalPlace() {
+    let (store, projects) = makeStore("alfa", "bravo", "charlie")
+    store.rename(projects[0].id, to: "Zulu")
+    #expect(store.barProjects.map(\.name) == ["bravo", "charlie", "Zulu"])
 }
 
-@MainActor @Test func moveBeyondEndClampsToLastBarPosition() {
-    let (store, projects) = makeStore("a", "b", "c", "d")
-    store.setStatus(.inactive, for: projects[3].id)
-    store.move(projects[0].id, toBarIndex: 99)
-    #expect(store.barProjects == [projects[1], projects[2], projects[0]])
-    #expect(store.inactiveProjects == [projects[3]])
+@MainActor @Test func numbersInNamesSortByValue() {
+    let (store, _) = makeStore("site10", "site2", "site1")
+    #expect(store.barProjects.map(\.name) == ["site1", "site2", "site10"])
 }
 
-@MainActor @Test func moveToNegativeIndexClampsToFirstPosition() {
-    let (store, projects) = makeStore("a", "b", "c")
-    store.move(projects[2].id, toBarIndex: -5)
-    #expect(store.barProjects == [projects[2], projects[0], projects[1]])
-}
-
-@MainActor @Test func moveOfInactiveOrUnknownProjectChangesNothing() {
-    let (store, projects) = makeStore("a", "b", "c")
-    store.setStatus(.inactive, for: projects[2].id)
-    store.move(projects[2].id, toBarIndex: 0)
-    store.move(UUID(), toBarIndex: 0)
-    #expect(store.barProjects == [projects[0], projects[1]])
-    #expect(store.inactiveProjects == [projects[2]])
+@MainActor @Test func sameNamesSortByFolder() {
+    let store = ProjectStore(fileURL: tempFileURL())
+    let two = store.add(path: "/y/site"), one = store.add(path: "/x/site")
+    #expect(store.barProjects == [one, two])
 }
 
 // MARK: Status and selection
@@ -201,11 +191,11 @@ private func tempFileURL() -> URL {
     #expect(store.selectedID == projects[0].id)
 }
 
-@MainActor @Test func restoringInactiveProjectPutsItAtEndOfBar() {
+@MainActor @Test func restoringInactiveProjectPutsItBackInAlphabeticalPlace() {
     let (store, projects) = makeStore("a", "b", "c")
     store.setStatus(.inactive, for: projects[0].id)
     store.setStatus(.active, for: projects[0].id)
-    #expect(store.barProjects == [projects[1], projects[2], projects[0]])
+    #expect(store.barProjects == projects)
     #expect(store.inactiveProjects.isEmpty)
 }
 

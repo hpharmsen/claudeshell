@@ -1,7 +1,7 @@
 # Doel: Mac terminal app om makkelijk met Claude projecten te werken
 
 ## Opzet
-De basis-eenheid in de applicatie is het project. Een project heeft een folder, een kleur en een index in de volgorde van projecten en een status. Status kan zijn: running, active of inactive. 
+De basis-eenheid in de applicatie is het project. Een project heeft een folder, een kleur en een status. De projecten staan op alfabetische volgorde in de balk. Status kan zijn: running, active of inactive. 
 
 ## Interface
 De applicatie besstaat uit 1 window, resizable. Standaard is deze gecentreerd en neemt 3/4 van de hoogte en 3/4 van de breedte van het scherm in.

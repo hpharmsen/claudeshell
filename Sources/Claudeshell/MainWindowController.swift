@@ -188,7 +188,7 @@ final class MainWindowController: NSWindowController {
 
     @objc func showQuickOpen(_ sender: Any?) {
         guard let window, window.attachedSheet == nil else { return }
-        QuickOpenPanel.present(on: window, projects: store.projects) { [weak self] in self?.select($0) }
+        QuickOpenPanel.present(on: window, projects: store.barProjects + store.inactiveProjects) { [weak self] in self?.select($0) }
     }
 
     /// Makes a running project the visible one. Leaving the previous one clears its waiting state, and so

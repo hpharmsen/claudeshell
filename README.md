@@ -8,7 +8,7 @@ It was built to replace a WezTerm setup with one workspace per project, where a 
 
 ## What it does
 
-- **Tiles bar.** One tile per project, with its own pastel colour and the key that selects it. Drag tiles to reorder them.
+- **Tiles bar.** One tile per project, in alphabetical order: its icon with the name below. A project without an icon shows its initials on a pastel colour. Hold Cmd to see the key that selects each tile.
 - **Two panes per project.** A zsh login shell (dark) on the left third and Claude Code (light) on the right, with a draggable divider. Claude resumes the last conversation in that folder.
 - **Attention.** A running tile shows a spinner while Claude works and a red dot when Claude has finished its turn or asks a question. A short sound plays when a project starts waiting.
 - **Fast switching.** Cmd+1 to Cmd+0 select tile 1 to 10, Cmd+Option+1 to Cmd+Option+0 tile 11 to 20. Cmd+§ jumps to the next waiting project. Cmd+P opens a fuzzy finder over all projects.

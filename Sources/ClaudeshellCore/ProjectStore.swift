@@ -6,7 +6,7 @@ import os
 @MainActor @Observable public final class ProjectStore {
     /// Whether the storage file existed when the store was created.
     public let fileExisted: Bool
-    /// All projects: first the bar in bar order, then the inactive ones.
+    /// All projects, in the order they were added.
     public private(set) var projects: [Project] = []
     public private(set) var selectedID: Project.ID?
 
@@ -44,9 +44,8 @@ import os
         guard fileExisted else { return }
         do {
             let records = try JSONDecoder().decode([Record].self, from: Data(contentsOf: fileURL))
-            let inactive = records.filter { $0.status == .inactive }
-            projects = (records.filter { $0.status != .inactive } + inactive).map(\.project)
-            inactive.forEach { statuses[$0.project.id] = .inactive }
+            projects = records.map(\.project)
+            records.filter { $0.status == .inactive }.forEach { statuses[$0.project.id] = .inactive }
         } catch {
             Self.log.error("Unreadable \(fileURL.path, privacy: .public): \(error)")
             let corruptURL = fileURL.deletingPathExtension().appendingPathExtension("corrupt.json")
@@ -61,8 +60,13 @@ import os
         }
     }
 
-    /// Running and active projects, in bar order.
-    public var barProjects: [Project] { projects.filter { status(of: $0.id) != .inactive } }
+    /// Running and active projects in bar order: alphabetical by name, same names by folder.
+    public var barProjects: [Project] {
+        projects.filter { status(of: $0.id) != .inactive }.sorted {
+            let order = $0.name.localizedStandardCompare($1.name)
+            return order == .orderedSame ? $0.path < $1.path : order == .orderedAscending
+        }
+    }
 
     public var inactiveProjects: [Project] { projects.filter { status(of: $0.id) == .inactive } }
 
@@ -86,24 +90,18 @@ import os
         }
         let project = Project(name: name ?? url.lastPathComponent, path: url.path,
                               color: ColorPalette.next(used: projects.map(\.color)))
-        projects.insert(project, at: barProjects.count)
+        projects.append(project)
         save()
         return project
     }
 
-    /// Sets the status; a project that becomes inactive leaves the bar, a restored one goes to its end.
+    /// Sets the status; a project that becomes inactive leaves the bar and loses the selection.
     public func setStatus(_ status: ProjectStatus, for id: Project.ID) {
-        guard let index = index(of: id) else { return }
+        guard index(of: id) != nil else { return }
         let old = self.status(of: id)
         guard status != old else { return }
-        if status == .inactive || old == .inactive {
-            let project = projects.remove(at: index)
-            statuses[id] = status
-            projects.insert(project, at: status == .inactive ? projects.count : barProjects.count)
-            if selectedID == id { selectedID = nil }
-        } else {
-            statuses[id] = status
-        }
+        statuses[id] = status
+        if status == .inactive || old == .inactive, selectedID == id { selectedID = nil }
         save()
     }
 
@@ -111,14 +109,6 @@ import os
     public func select(_ id: Project.ID?) {
         guard id.map({ status(of: $0) != .inactive }) ?? true else { return }
         selectedID = id
-    }
-
-    /// Moves a bar project to a position in the bar; the index is clamped.
-    public func move(_ id: Project.ID, toBarIndex index: Int) {
-        guard status(of: id) != .inactive, let from = self.index(of: id) else { return }
-        let project = projects.remove(at: from)
-        projects.insert(project, at: min(max(index, 0), barProjects.count))
-        save()
     }
 
     /// Renames a project; a blank name is refused.
