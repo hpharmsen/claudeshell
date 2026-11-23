@@ -113,12 +113,7 @@ struct ProjectStripView: View {
             .frame(height: Self.rowHeight)
             HStack(spacing: 10) {
                 ForEach(LinkKind.allCases, id: \.self) { kind in
-                    if let url = data.links[kind] {
-                        Button(kind.rawValue) { NSWorkspace.shared.open(url) }
-                            .buttonStyle(.link)
-                            .focusable(false)
-                            .help(url.absoluteString)
-                    }
+                    if let url = data.links[kind] { LinkButton(title: kind.rawValue, url: url) }
                 }
             }
             .frame(height: Self.rowHeight)
@@ -160,5 +155,22 @@ struct ProjectStripView: View {
         case .bugfix: "bugfix bezig"
         case .handoff: "handoff open"
         }
+    }
+}
+
+/// One link of the strip: blue, underlined while the pointer is on it; a click opens it in the browser.
+private struct LinkButton: View {
+    let title: String
+    let url: URL
+    @State private var isHovered = false
+
+    var body: some View {
+        Button { NSWorkspace.shared.open(url) } label: {
+            Text(title).underline(isHovered).foregroundStyle(Color(hex: "#0969DA"))
+        }
+        .buttonStyle(.plain)
+        .focusable(false)
+        .onHover { isHovered = $0 }
+        .help(url.absoluteString)
     }
 }
