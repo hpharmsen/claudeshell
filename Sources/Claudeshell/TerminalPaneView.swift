@@ -24,6 +24,8 @@ final class TerminalPaneView: LocalProcessTerminalView {
     private var keyMonitor: Any?
     /// True once the shell reports its directory (OSC 7); SwiftTerm then resolves relative links itself.
     var reportsDirectory = false
+    /// The shell of the same project; a clicked script lands on its prompt.
+    weak var shellPane: TerminalPaneView?
 
     init(spec: LaunchSpec) {
         self.spec = spec
@@ -38,7 +40,15 @@ final class TerminalPaneView: LocalProcessTerminalView {
 
     /// Claude prints paths relative to the project folder and reports no directory (OSC 7),
     /// so SwiftTerm would look for them in the folder of the app.
+    /// A slash command is no file: it goes to the prompt, without Enter, so it can still be edited.
+    /// SwiftTerm refuses to open a file that can run; it goes to the prompt of the shell instead.
     override func requestOpenLink(source: TerminalView, request: TerminalLinkRequest) {
+        if !request.isExplicit, let command = spec.slashCommand(request.link) { return send(txt: command) }
+        if !request.isExplicit, let shellPane, let command = spec.executableCommand(request.link) {
+            shellPane.send(txt: command)
+            window?.makeFirstResponder(shellPane)
+            return
+        }
         let isRelativeToPane = !request.isExplicit && !reportsDirectory
         request.openDefault(isRelativeToPane ? spec.resolvedLink(request.link) : nil)
     }

@@ -29,12 +29,14 @@ import SwiftTerm
             alert.runModal()
             return false
         }
-        panes[project.id] = [PaneKind.shell, .claude].map { kind in
+        let views = [PaneKind.shell, .claude].map { kind in
             let view = TerminalPaneView(spec: spec(kind, project))
             view.processDelegate = self
             launch(view, in: project.id)
             return view
         }
+        views.forEach { $0.shellPane = views[0] }
+        panes[project.id] = views
         store.setStatus(.running, for: project.id)
         return true
     }

@@ -39,9 +39,7 @@ public struct LaunchSpec: Equatable, Sendable {
 
     /// A path from the pane's output as an absolute path, when it names a file; relative paths start in the pane's folder.
     public func resolvedLink(_ link: String) -> String {
-        // The link detection takes the full stop of a sentence along: 'see docs/notes.md.'
-        let trimmed = link.replacing(/[.,;:!?]+$/, with: "")
-        for candidate in [link, trimmed] where !candidate.isEmpty {
+        for candidate in [link, Self.withoutSentenceEnd(link)] where !candidate.isEmpty {
             let expanded = (candidate as NSString).expandingTildeInPath
             let path = expanded.hasPrefix("/") ? expanded : (directory as NSString).appendingPathComponent(expanded)
             // A source location such as 'main.swift:12:4' stays on the link but is not part of the file name.
@@ -49,5 +47,29 @@ public struct LaunchSpec: Equatable, Sendable {
             if FileManager.default.fileExists(atPath: file) { return path }
         }
         return link
+    }
+
+    /// A link from a Claude pane as a slash command with its arguments ('/hp:build docs/plan.md'); nil for anything else.
+    public func slashCommand(_ link: String) -> String? {
+        let command = Self.withoutSentenceEnd(link)
+        // '/tmp' has the shape of a command too, so a name that exists as a file stays a file.
+        guard kind == .claude, let name = command.prefixMatch(of: /\/[a-z][\w:-]*(?= |$)/),
+              !FileManager.default.fileExists(atPath: String(name.output)) else { return nil }
+        return command
+    }
+
+    /// A link to a file that can run, as an absolute path quoted for the shell; nil for anything else.
+    public func executableCommand(_ link: String) -> String? {
+        // './run.sh' resolves to 'folder/./run.sh'.
+        let path = (resolvedLink(link) as NSString).standardizingPath
+        var isDirectory: ObjCBool = false
+        guard path.hasPrefix("/"), FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory),
+              !isDirectory.boolValue, FileManager.default.isExecutableFile(atPath: path) else { return nil }
+        return path.wholeMatch(of: /[\w\/.+-]+/) != nil ? path : "'" + path.replacing("'", with: "'\\''") + "'"
+    }
+
+    /// The link detection takes the full stop of a sentence along: 'see docs/notes.md.'
+    private static func withoutSentenceEnd(_ link: String) -> String {
+        link.replacing(/[.,;:!?]+$/, with: "")
     }
 }

@@ -97,3 +97,37 @@ private func env(_ spec: LaunchSpec) -> [String: String] {
     #expect(pane.resolvedLink("https://example.com/docs/notes.md") == "https://example.com/docs/notes.md")
     #expect(pane.resolvedLink("") == "")
 }
+
+@Test func slashCommandInAClaudePaneIsNoFile() {
+    let pane = spec(.claude)
+    #expect(pane.slashCommand("/hp:deepen-plan docs/plans/001-plan.md") == "/hp:deepen-plan docs/plans/001-plan.md")
+    #expect(pane.slashCommand("/hp:build.") == "/hp:build")
+    #expect(pane.slashCommand("/clear") == "/clear")
+    #expect(pane.slashCommand("/tmp") == nil)
+    #expect(pane.slashCommand("/etc/hosts") == nil)
+    #expect(pane.slashCommand("docs/notes.md") == nil)
+    #expect(pane.slashCommand("https://example.com/clear") == nil)
+    #expect(pane.slashCommand("/") == nil)
+    #expect(pane.slashCommand("") == nil)
+    #expect(spec(.shell).slashCommand("/clear") == nil)
+}
+
+@Test func linkToAFileThatCanRunBecomesAShellCommand() throws {
+    let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).path
+    try FileManager.default.createDirectory(atPath: folder + "/my scripts", withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(atPath: folder) }
+    let executable: [FileAttributeKey: Any] = [.posixPermissions: 0o755]
+    FileManager.default.createFile(atPath: folder + "/run.sh", contents: nil, attributes: executable)
+    FileManager.default.createFile(atPath: folder + "/my scripts/it's.sh", contents: nil, attributes: executable)
+    FileManager.default.createFile(atPath: folder + "/notes.md", contents: nil)
+    let pane = spec(.claude, path: folder)
+    #expect(pane.executableCommand("./run.sh") == folder + "/run.sh")
+    #expect(pane.executableCommand("run.sh.") == folder + "/run.sh")
+    #expect(pane.executableCommand(folder + "/run.sh") == folder + "/run.sh")
+    #expect(pane.executableCommand("my scripts/it's.sh") == "'\(folder)/my scripts/it'\\''s.sh'")
+    #expect(pane.executableCommand("notes.md") == nil)
+    #expect(pane.executableCommand("my scripts") == nil)
+    #expect(pane.executableCommand("missing.sh") == nil)
+    #expect(pane.executableCommand("https://example.com/run.sh") == nil)
+    #expect(pane.executableCommand("") == nil)
+}
