@@ -58,6 +58,7 @@ struct TilesBarView: View {
             Button("Verwijderen") { actions.remove(project.id) }
         }
         Divider()
+        Button("Open in Finder") { NSWorkspace.shared.open(URL(fileURLWithPath: project.path)) }
         Button("Hernoemen…") { actions.rename(project.id) }
         Menu("Kleur") {
             ForEach(Array(ColorPalette.colors.enumerated()), id: \.element) { index, hex in
