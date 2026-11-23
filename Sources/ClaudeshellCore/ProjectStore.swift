@@ -137,6 +137,28 @@ import os
         save()
     }
 
+    /// Sets the website; blank text clears it, a bare domain gets 'https://', text without a valid host is refused.
+    @discardableResult public func setWebsite(_ text: String, for id: Project.ID) -> Bool {
+        guard let index = index(of: id) else { return false }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        var website: String?
+        if !trimmed.isEmpty {
+            let lowered = trimmed.lowercased()
+            let url = lowered.hasPrefix("http://") || lowered.hasPrefix("https://") ? trimmed : "https://" + trimmed
+            guard !url.contains(" "), URL(string: url)?.host?.contains(".") == true else { return false }
+            website = url
+        }
+        projects[index].website = website
+        save()
+        return true
+    }
+
+    public func setIconState(_ state: IconState?, for id: Project.ID) {
+        guard let index = index(of: id) else { return }
+        projects[index].iconState = state
+        save()
+    }
+
     /// Removes the project from the app; the folder stays untouched.
     public func remove(_ id: Project.ID) {
         projects.removeAll { $0.id == id }

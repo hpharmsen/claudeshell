@@ -26,18 +26,36 @@ public struct PaneID: Hashable, Sendable, CustomStringConvertible {
     public var description: String { rawValue }
 }
 
+/// How a project came by its icon; a project without one has never been searched.
+public enum IconState: String, Codable, Sendable {
+    case searched, custom, removed
+}
+
 /// A project: a folder with a name and a tile color ('#RRGGBB').
 public struct Project: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     public var name: String
     public var path: String
     public var color: String
+    public var website: String?
+    public var iconState: IconState?
 
-    public init(id: UUID = UUID(), name: String, path: String, color: String) {
+    public init(id: UUID = UUID(), name: String, path: String, color: String,
+                website: String? = nil, iconState: IconState? = nil) {
         self.id = id
         self.name = name
         self.path = path
         self.color = color
+        self.website = website
+        self.iconState = iconState
+    }
+
+    /// Two letters for a tile without icon: of the first two words, or the first two of a single word.
+    public var initials: String {
+        let words = name.split { " .-_".contains($0) }
+        guard words.count < 2 else { return words.prefix(2).map { $0.prefix(1).uppercased() }.joined() }
+        let word = words.first ?? ""
+        return word.prefix(1).uppercased() + word.dropFirst().prefix(1)
     }
 }
 
