@@ -506,3 +506,30 @@ func linkWithoutValidHostIsRefusedAndKeepsOldValue(text: String) {
     }
     #expect(try String(contentsOf: corruptURL, encoding: .utf8) == "tweede")
 }
+
+// MARK: Next running project
+
+@MainActor @Test func nextRunningIsTheFirstRunningProjectAfterItInBarOrder() {
+    let (store, projects) = makeStore("a", "b", "c", "d")
+    [0, 2, 3].forEach { store.setStatus(.running, for: projects[$0].id) }
+    #expect(store.nextRunning(after: projects[0].id) == projects[2].id)
+}
+
+@MainActor @Test func nextRunningWrapsAroundToTheStartOfTheBar() {
+    let (store, projects) = makeStore("a", "b", "c")
+    [0, 2].forEach { store.setStatus(.running, for: projects[$0].id) }
+    #expect(store.nextRunning(after: projects[2].id) == projects[0].id)
+}
+
+@MainActor @Test func nextRunningIsNilWhenNothingElseRuns() {
+    let (store, projects) = makeStore("a", "b")
+    store.setStatus(.running, for: projects[0].id)
+    #expect(store.nextRunning(after: projects[0].id) == nil)
+    #expect(store.nextRunning(after: UUID()) == nil)
+}
+
+@MainActor @Test func nextRunningFollowsTheBarOrderNotTheOrderOfAdding() {
+    let (store, projects) = makeStore("c", "a", "b")
+    projects.forEach { store.setStatus(.running, for: $0.id) }
+    #expect(store.nextRunning(after: projects[1].id) == projects[2].id)
+}
