@@ -259,6 +259,7 @@ final class MainWindowController: NSWindowController {
     func chooseIcon(_ id: Project.ID) {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.image]
+        panel.directoryURL = store.project(id).map { URL(fileURLWithPath: $0.path) }
         panel.prompt = "Kies"
         guard panel.runModal() == .OK, let url = panel.url else { return }
         icons.setCustom(imageAt: url, for: id)
