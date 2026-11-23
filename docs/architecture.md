@@ -177,6 +177,7 @@ The conversations of a project are the `.jsonl` files directly in `~/.claude/pro
 - Two seconds after a project stops, its summary goes into the queue; by then nobody writes in the conversation file any more.
 - A shell that ends after more than two seconds gets a new shell in the same pane. Claude, and any process that ends within two seconds, leaves a line in the pane; Enter starts it again.
 - SwiftTerm sends keys straight to the process, so that Enter is caught with a local key monitor in `TerminalPaneView`.
+- Option composes characters as elsewhere on the Mac: Option+U and then E gives ë. It is Meta only on keys without text (arrows, Enter, Backspace), so Option+Left still moves a word back.
 
 ## Files on disk
 

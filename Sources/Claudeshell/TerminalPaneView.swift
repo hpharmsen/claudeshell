@@ -33,6 +33,10 @@ final class TerminalPaneView: LocalProcessTerminalView {
         TerminalTheme.apply(to: self, kind: spec.kind)
         // A plain click opens a link, as in WezTerm.
         linkHighlightMode = .hover
+        // Option composes characters as elsewhere on the Mac (Option+E, E gives é);
+        // it stays Meta on keys without text, so Option+Left and Option+Enter keep working.
+        optionAsMetaKey = false
+        optionAsMetaKeyForFunctionalKeys = true
     }
 
     @available(*, unavailable)
