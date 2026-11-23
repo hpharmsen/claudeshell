@@ -51,6 +51,8 @@ final class MainWindowController: NSWindowController {
         buildLayout(in: window)
         trackCommandKey()
         refresh()
+        // The project that was in view at the last quit or restart starts again and is shown.
+        if let id = store.lastShownID { select(id) }
     }
 
     @available(*, unavailable)

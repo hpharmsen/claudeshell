@@ -185,6 +185,7 @@ The conversations of a project are the `.jsonl` files directly in `~/.claude/pro
 | `~/Library/Application Support/Claudeshell/projects.json` | Projects in the order they were added, with `status` active or inactive, and optionally `website`, `iconState` (`searched`, `custom` or `removed`) and `linkOverrides` (HP's own link per `live`, `localhost` and `git`; an empty text is a cleared link). Running and the selection are never stored. |
 | `~/Library/Application Support/Claudeshell/icons/` | The icon of a project as `<project id>.png` |
 | `~/Library/Application Support/Claudeshell/summaries/` | The summary of a project as `<project id>.json`: text, moment and fingerprint |
+| `~/Library/Application Support/Claudeshell/last-shown` | The id of the project in view; at the next start that project starts and is shown again |
 | `~/Library/Application Support/Claudeshell/projects.corrupt.json` | An unreadable `projects.json`, set aside |
 | `~/Library/Application Support/Claudeshell/hooks.json` | The generated hook settings, rewritten at every start |
 | `~/Library/Application Support/Claudeshell/events` | The events file, emptied at every start; `tail -f` shows the hooks live |
