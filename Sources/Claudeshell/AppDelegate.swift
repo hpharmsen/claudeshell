@@ -46,6 +46,21 @@ import os
         sessions?.stopAll()
     }
 
+    /// Quits and opens the app again, for example to run a newly installed version.
+    @objc func restart(_ sender: Any?) {
+        let relaunch = Process()
+        relaunch.executableURL = URL(fileURLWithPath: "/bin/sh")
+        // Opens the app only after this process is gone, so the two never share the events file.
+        relaunch.arguments = ["-c", "while kill -0 \"$0\" 2>/dev/null; do sleep 0.1; done; open \"$1\"",
+                              String(ProcessInfo.processInfo.processIdentifier), Bundle.main.bundlePath]
+        do {
+            try relaunch.run()
+            NSApp.terminate(sender)
+        } catch {
+            Self.log.error("Could not restart: \(error)")
+        }
+    }
+
     /// First start: the WezTerm projects whose folder exists become active tiles (R22).
     private func importWezTermProjects(into store: ProjectStore) {
         let home = NSHomeDirectory()

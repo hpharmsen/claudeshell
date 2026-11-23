@@ -7,6 +7,7 @@ import AppKit
         menu.addItem(submenu("Claudeshell", [
             item("Verberg Claudeshell", #selector(NSApplication.hide(_:)), "h"),
             .separator(),
+            item("Herstart Claudeshell", #selector(AppDelegate.restart(_:)), ""),
             item("Stop Claudeshell", #selector(NSApplication.terminate(_:)), "q"),
         ]))
         menu.addItem(submenu("Bewerken", [
