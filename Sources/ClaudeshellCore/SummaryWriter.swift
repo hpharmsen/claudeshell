@@ -7,6 +7,8 @@ public struct SummaryWriter: Sendable {
     public enum Outcome: Equatable, Sendable { case updated(ProjectSummary), unchanged, failed }
 
     private static let log = Logger(subsystem: "Claudeshell", category: "Summary")
+    /// Where `claude` is expected before a login shell is asked.
+    public static let defaultClaudePath = NSHomeDirectory() + "/.local/bin/claude"
     private static let git = "/usr/bin/git"
     private static let timeout: TimeInterval = 60
     private static let maxDocumentCharacters = 4000
@@ -56,7 +58,7 @@ public struct SummaryWriter: Sendable {
     }
 
     /// The path of `claude`: the fixed path when that file exists, else the last line a login shell prints for it.
-    public static func claudePath(run: ProcessRunner, fixedPath: String = NSHomeDirectory() + "/.local/bin/claude") async -> String? {
+    public static func claudePath(run: ProcessRunner, fixedPath: String = defaultClaudePath) async -> String? {
         if FileManager.default.fileExists(atPath: fixedPath) { return fixedPath }
         let home = URL(fileURLWithPath: NSHomeDirectory())
         // An interactive login shell may print a greeting first; the path is its last line.
