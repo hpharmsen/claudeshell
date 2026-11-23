@@ -133,14 +133,29 @@ import os
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         var website: String?
         if !trimmed.isEmpty {
-            let lowered = trimmed.lowercased()
-            let url = lowered.hasPrefix("http://") || lowered.hasPrefix("https://") ? trimmed : "https://" + trimmed
-            guard !url.contains(" "), URL(string: url)?.host?.contains(".") == true else { return false }
+            guard let url = Self.normalizedURL(trimmed, localAllowed: false) else { return false }
             website = url
         }
         projects[index].website = website
         save()
         return true
+    }
+
+    /// Sets the user's own link of one kind; blank text stores 'cleared', text without a valid host is refused.
+    @discardableResult public func setLink(_ text: String, kind: LinkKind, for id: Project.ID) -> Bool {
+        guard let index = index(of: id) else { return false }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let link = trimmed.isEmpty ? "" : Self.normalizedURL(trimmed, localAllowed: true) else { return false }
+        projects[index].linkOverrides = (projects[index].linkOverrides ?? [:]).merging([kind: link]) { $1 }
+        save()
+        return true
+    }
+
+    /// Forgets the user's own links, so the app finds them again.
+    public func clearLinkOverrides(for id: Project.ID) {
+        guard let index = index(of: id) else { return }
+        projects[index].linkOverrides = nil
+        save()
     }
 
     public func setIconState(_ state: IconState?, for id: Project.ID) {
@@ -171,6 +186,17 @@ import os
     }
 
     private static let log = Logger(subsystem: "Claudeshell", category: "ProjectStore")
+
+    /// Trimmed text as URL, or nil without a valid host; no scheme gives 'https://', or 'http://' for an allowed local host.
+    private static func normalizedURL(_ trimmed: String, localAllowed: Bool) -> String? {
+        let lowered = trimmed.lowercased()
+        let isLocal = localAllowed && ["localhost", "127.0.0.1"].contains(String(lowered.prefix { !":/".contains($0) }))
+        let url = lowered.hasPrefix("http://") || lowered.hasPrefix("https://") ? trimmed
+            : (isLocal ? "http://" : "https://") + trimmed
+        guard !url.contains(" "), let host = URL(string: url)?.host?.lowercased(),
+              host.contains(".") || localAllowed && host == "localhost" else { return nil }
+        return url
+    }
 
     private func index(of id: Project.ID) -> Int? { projects.firstIndex { $0.id == id } }
 }

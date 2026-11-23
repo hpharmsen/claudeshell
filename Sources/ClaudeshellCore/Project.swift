@@ -31,6 +31,11 @@ public enum IconState: String, Codable, Sendable {
     case searched, custom, removed
 }
 
+/// Kind of link of a project; the raw value is the key in the stored JSON object.
+public enum LinkKind: String, Codable, CodingKeyRepresentable, CaseIterable, Sendable {
+    case live, localhost, git
+}
+
 /// A project: a folder with a name and a tile color ('#RRGGBB').
 public struct Project: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
@@ -39,15 +44,18 @@ public struct Project: Identifiable, Codable, Hashable, Sendable {
     public var color: String
     public var website: String?
     public var iconState: IconState?
+    /// Links the user set himself: a missing kind means 'use what the app finds', an empty text means 'cleared'.
+    public var linkOverrides: [LinkKind: String]?
 
-    public init(id: UUID = UUID(), name: String, path: String, color: String,
-                website: String? = nil, iconState: IconState? = nil) {
+    public init(id: UUID = UUID(), name: String, path: String, color: String, website: String? = nil,
+                iconState: IconState? = nil, linkOverrides: [LinkKind: String]? = nil) {
         self.id = id
         self.name = name
         self.path = path
         self.color = color
         self.website = website
         self.iconState = iconState
+        self.linkOverrides = linkOverrides
     }
 
     /// Two letters for a tile without icon: of the first two words, or the first two of a single word.
