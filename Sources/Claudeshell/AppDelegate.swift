@@ -9,6 +9,7 @@ import os
     private var eventLog: HookEventLog?
     private var eventSource: DispatchSourceFileSystemObject?
     private var sessions: SessionManager?
+    private var info: ProjectInfoStore?
     private var windowController: MainWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -32,18 +33,24 @@ import os
 
         let sessions = SessionManager(store: store, tracker: tracker, eventsPath: eventLog.fileURL.path,
                                       settingsPath: settingsURL.path)
+        let info = ProjectInfoStore(store: store, supportFolder: support, run: Subprocess.run)
         let windowController = MainWindowController(store: store, tracker: tracker, sessions: sessions,
-                                                    icons: IconStore(store: store, support: support))
+                                                    icons: IconStore(store: store, support: support), info: info)
         self.sessions = sessions
+        self.info = info
         self.windowController = windowController
         NSApp.mainMenu = MainMenu.make(target: windowController)
         windowController.showWindow(nil)
         NSApp.activate()
+        // Brings the summaries up to date in the background, also after a quit or crash with running projects.
+        info.summariseBar()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 
     func applicationWillTerminate(_ notification: Notification) {
+        // Quitting and restarting never wait for a summary; a missed one is made at the next start (R59).
+        info?.cancelAll()
         sessions?.stopAll()
     }
 
