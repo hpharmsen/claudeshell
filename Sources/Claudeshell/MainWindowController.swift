@@ -57,8 +57,9 @@ final class MainWindowController: NSWindowController {
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
     private func buildLayout(in window: NSWindow) {
-        let bar = NSHostingView(rootView: TilesBarView(store: store, tracker: tracker, icons: icons, commandKey: commandKey,
-                                                        actions: self))
+        // Passive, so the strip button in the bar leaves the typing in the terminal pane.
+        let bar = PassiveHostingView(rootView: TilesBarView(store: store, tracker: tracker, icons: icons, info: info,
+                                                             commandKey: commandKey, actions: self))
         let strip = PassiveHostingView(rootView: ProjectStripView(store: store, info: info, actions: self))
         // The height is fixed by a constraint; the content must not add size constraints of its own.
         strip.sizingOptions = []

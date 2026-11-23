@@ -25,10 +25,6 @@ struct ProjectStripView: View {
                 let data = info.info(id)
                 facts(data, of: id)
                 summary(data, of: id)
-                Button { actions.toggleStrip(nil) } label: { Image(systemName: "xmark") }
-                    .buttonStyle(.borderless)
-                    .focusable(false)
-                    .help("Sluit de projectstrook (Cmd+I)")
             }
         }
         .font(.system(size: 12))

@@ -14,6 +14,7 @@ struct TilesBarView: View {
     let store: ProjectStore
     let tracker: AttentionTracker
     let icons: IconStore
+    let info: ProjectInfoStore
     let commandKey: CommandKeyState
     unowned let actions: MainWindowController
 
@@ -28,6 +29,14 @@ struct TilesBarView: View {
                     .contextMenu { contextMenu(for: project) }
             }
             Spacer(minLength: 0)
+            // Always in view, so a closed strip can be opened again; dark while the strip shows.
+            Button { actions.toggleStrip(nil) } label: {
+                Image(systemName: "rectangle.topthird.inset.filled")
+                    .foregroundStyle(TileView.ink.opacity(info.isOpen ? 1 : 0.35))
+            }
+            .buttonStyle(.borderless)
+            .disabled(store.selectedID == nil)
+            .help("Projectstrook (Cmd+I)")
             Menu {
                 ForEach(store.inactiveProjects) { project in
                     Menu(project.name) {
