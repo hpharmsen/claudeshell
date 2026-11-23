@@ -80,6 +80,10 @@ private func settings(_ hosts: String) -> String {
     #expect(try guessedDomains(files: ["config/settings.py": settings(hosts)]) == ["app.voorbeeld.nl", "www.voorbeeld.nl"])
 }
 
+@Test func settingsInTheProjectRootIsFound() throws {
+    #expect(try guessedDomains(files: ["settings.py": settings("['app.voorbeeld.nl']")]) == ["app.voorbeeld.nl"])
+}
+
 @Test func settingsTwoFoldersDeepIsFound() throws {
     #expect(try guessedDomains(files: ["src/app/settings.py": settings("['app.voorbeeld.nl']")]) == ["app.voorbeeld.nl"])
 }
