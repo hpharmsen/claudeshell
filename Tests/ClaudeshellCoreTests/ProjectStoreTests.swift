@@ -279,6 +279,79 @@ private func tempFileURL() -> URL {
     #expect(!store.rename(UUID(), to: "x"))
 }
 
+// MARK: Website and icon state
+
+@MainActor @Test func bareDomainIsStoredWithHTTPS() {
+    let (store, projects) = makeStore("a")
+    #expect(store.setWebsite("voorbeeld.nl", for: projects[0].id))
+    #expect(store.project(projects[0].id)?.website == "https://voorbeeld.nl")
+}
+
+@MainActor @Test func websiteWithSchemeIsStoredAsEntered() {
+    let (store, projects) = makeStore("a")
+    #expect(store.setWebsite("http://voorbeeld.nl/pad", for: projects[0].id))
+    #expect(store.project(projects[0].id)?.website == "http://voorbeeld.nl/pad")
+}
+
+@MainActor @Test(arguments: ["", "   "]) func blankWebsiteClearsTheWebsite(text: String) {
+    let (store, projects) = makeStore("a")
+    store.setWebsite("voorbeeld.nl", for: projects[0].id)
+    #expect(store.setWebsite(text, for: projects[0].id))
+    #expect(store.project(projects[0].id)?.website == nil)
+}
+
+@MainActor @Test func websiteWithoutValidHostIsRefusedAndKeepsOldValue() {
+    let (store, projects) = makeStore("a")
+    store.setWebsite("voorbeeld.nl", for: projects[0].id)
+    #expect(!store.setWebsite("geen domein", for: projects[0].id))
+    #expect(store.project(projects[0].id)?.website == "https://voorbeeld.nl")
+}
+
+@MainActor @Test func websiteAndIconStateSurviveReload() {
+    let url = tempFileURL()
+    let (store, projects) = makeStore("a", "b", at: url)
+    store.setWebsite("voorbeeld.nl", for: projects[0].id)
+    store.setIconState(.removed, for: projects[0].id)
+    let loaded = ProjectStore(fileURL: url)
+    #expect(loaded.project(projects[0].id)?.website == "https://voorbeeld.nl")
+    #expect(loaded.project(projects[0].id)?.iconState == .removed)
+    #expect(loaded.project(projects[1].id)?.website == nil)
+    #expect(loaded.project(projects[1].id)?.iconState == nil)
+}
+
+@MainActor @Test func clearedWebsiteAndIconStateSurviveReload() {
+    let url = tempFileURL()
+    let (store, projects) = makeStore("a", at: url)
+    store.setWebsite("voorbeeld.nl", for: projects[0].id)
+    store.setIconState(.searched, for: projects[0].id)
+    store.setWebsite("", for: projects[0].id)
+    store.setIconState(nil, for: projects[0].id)
+    #expect(ProjectStore(fileURL: url).projects == projects)
+}
+
+@MainActor @Test func setIconStateOfUnknownProjectChangesNothing() {
+    let url = tempFileURL()
+    let (store, projects) = makeStore("a", at: url)
+    store.setIconState(.custom, for: UUID())
+    #expect(store.projects == projects)
+    #expect(store.project(projects[0].id)?.iconState == nil)
+    #expect(ProjectStore(fileURL: url).projects == projects)
+}
+
+@MainActor @Test func fileWithoutWebsiteAndIconStateLoadsWithBothEmpty() throws {
+    let url = tempFileURL()
+    let json = """
+        [{"id": "11111111-2222-3333-4444-555555555555", "name": "Bakkerij", "path": "/p/bakkerij",
+          "color": "#3B82F6", "status": "active"}]
+        """
+    try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+    try Data(json.utf8).write(to: url)
+    let store = ProjectStore(fileURL: url)
+    #expect(store.projects.map(\.name) == ["Bakkerij"])
+    #expect(store.projects[0].website == nil)
+    #expect(store.projects[0].iconState == nil)
+}
+
 // MARK: Storage
 
 @MainActor @Test func missingFileGivesEmptyStoreAndFirstSaveCreatesFile() {
