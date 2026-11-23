@@ -2,19 +2,26 @@ import AppKit
 import ClaudeshellCore
 import SwiftUI
 
+/// Whether Cmd is held down; the tiles show their shortcut meanwhile (R38).
+@MainActor @Observable final class CommandKeyState {
+    var isDown = false
+}
+
 /// The bar of project tiles, with the inactive dropdown and the + on the right.
 struct TilesBarView: View {
-    static let height: CGFloat = 56
+    static let height: CGFloat = 67
 
     let store: ProjectStore
     let tracker: AttentionTracker
+    let commandKey: CommandKeyState
     unowned let actions: MainWindowController
 
     var body: some View {
         HStack(spacing: 2) {
             ForEach(Array(store.barProjects.enumerated()), id: \.element.id) { index, project in
-                TileView(project: project, shortcut: Self.shortcut(forTile: index), isRunning: store.status(of: project.id) == .running,
-                         isSelected: store.selectedID == project.id, attention: tracker.state(of: project.id))
+                TileView(project: project, shortcut: commandKey.isDown ? Self.shortcut(forTile: index) : "",
+                         isRunning: store.status(of: project.id) == .running, isSelected: store.selectedID == project.id,
+                         attention: tracker.state(of: project.id))
                     .onTapGesture { actions.select(project.id) }
                     .contextMenu { contextMenu(for: project) }
                     .draggable(project.id.uuidString)
@@ -88,7 +95,7 @@ struct TilesBarView: View {
     }
 }
 
-/// One tile: muted when nothing runs, full color when running, a dark line when selected.
+/// One tile: the icon area with the name below it; greyed when nothing runs, white with a dark line when selected.
 private struct TileView: View {
     let project: Project
     let shortcut: String
@@ -96,34 +103,63 @@ private struct TileView: View {
     let isSelected: Bool
     let attention: AttentionState
 
-    private static let ink = Color(hex: "#24292F")
+    static let ink = Color(hex: "#24292F")
 
     var body: some View {
-        HStack(spacing: 4) {
-            if attention == .waiting { WaitingDot() }
-            if attention == .busy { BusySpinner() }
-            VStack(spacing: 1) {
-                Text(shortcut)
-                    .font(.system(size: 10, weight: .medium))
-                    .opacity(0.6)
-                Text(project.name)
-                    .font(.system(size: 12, weight: isSelected ? .bold : .regular))
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
-                    .truncationMode(.tail)
+        VStack(spacing: 2) {
+            IconArea(project: project)
+                .grayscale(isRunning ? 0 : 1)
+                .opacity(isRunning ? 1 : 0.45)
+                .overlay {
+                    if !shortcut.isEmpty {
+                        Text(shortcut)
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .background(Self.ink.opacity(0.6), in: IconArea.shape)
+                    }
+                }
+                .overlay(alignment: .topTrailing) {
+                    // Half over the corner of the icon area.
+                    Group {
+                        if attention == .waiting { WaitingDot() }
+                        if attention == .busy { BusySpinner() }
+                    }
+                    .offset(x: 7, y: -7)
+                }
+            Text(project.name)
+                .font(.system(size: 10, weight: isSelected ? .bold : .regular))
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .foregroundStyle(Self.ink.opacity(isRunning ? 1 : 0.5))
+                .padding(.horizontal, 2)
+        }
+        .frame(minWidth: 44, maxWidth: 64, maxHeight: .infinity)
+        .background {
+            if isSelected {
+                Color.white
+                    .overlay(alignment: .bottom) { Rectangle().fill(Self.ink).frame(height: 3) }
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
             }
-            .foregroundStyle(Self.ink.opacity(isRunning ? 1 : 0.6))
         }
-        .padding(.horizontal, 5)
-        .frame(maxWidth: 170, maxHeight: .infinity)
-        .background(Color(hex: project.color).opacity(isRunning ? 1 : 0.45))
-        .overlay(alignment: .bottom) {
-            if isSelected { Rectangle().fill(Self.ink).frame(height: 3) }
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 4))
         .padding(.vertical, 2)
         .contentShape(Rectangle())
         .help(project.name)
+    }
+}
+
+/// The square of a tile: the initials on the project color.
+private struct IconArea: View {
+    static let shape = RoundedRectangle(cornerRadius: 7)
+
+    let project: Project
+
+    var body: some View {
+        Text(project.initials)
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(TileView.ink)
+            .frame(width: 36, height: 36)
+            .background(Color(hex: project.color), in: Self.shape)
     }
 }
 
@@ -135,7 +171,7 @@ private struct WaitingDot: View {
         Circle()
             .fill(Color(hex: "#CF222E"))
             .overlay(Circle().stroke(.white, lineWidth: 1.5))
-            .frame(width: 11, height: 11)
+            .frame(width: 14, height: 14)
             .scaleEffect(isDimmed ? 0.6 : 1)
             .fixedSize()
             .onAppear {
@@ -150,9 +186,11 @@ private struct BusySpinner: View {
     var body: some View {
         Circle()
             .trim(from: 0, to: 0.7)
-            .stroke(Color(hex: "#24292F"), lineWidth: 1.5)
+            .stroke(TileView.ink, lineWidth: 2)
             .frame(width: 9, height: 9)
             .rotationEffect(.degrees(isTurned ? 360 : 0))
+            .frame(width: 14, height: 14)
+            .background(.white, in: Circle())
             .fixedSize()
             .onAppear {
                 withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) { isTurned = true }

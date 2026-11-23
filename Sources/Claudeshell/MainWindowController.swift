@@ -10,6 +10,7 @@ final class MainWindowController: NSWindowController {
     private let store: ProjectStore
     private let tracker: AttentionTracker
     private let sessions: SessionManager
+    private let commandKey = CommandKeyState()
     private let splitView = NSSplitView()
     private let slots = [NSView(), NSView()]
     private let hint = NSTextField(labelWithString: "Kies een project in de balk, of zoek er een met Cmd+P.")
@@ -35,6 +36,7 @@ final class MainWindowController: NSWindowController {
         }
         window.setFrameAutosaveName(Self.autosaveName)
         buildLayout(in: window)
+        trackCommandKey()
         refresh()
     }
 
@@ -42,7 +44,7 @@ final class MainWindowController: NSWindowController {
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
     private func buildLayout(in window: NSWindow) {
-        let bar = NSHostingView(rootView: TilesBarView(store: store, tracker: tracker, actions: self))
+        let bar = NSHostingView(rootView: TilesBarView(store: store, tracker: tracker, commandKey: commandKey, actions: self))
         splitView.isVertical = true
         splitView.dividerStyle = .thin
         slots.forEach(splitView.addArrangedSubview)
@@ -69,6 +71,19 @@ final class MainWindowController: NSWindowController {
         splitView.setPosition(splitView.bounds.width / 3, ofDividerAt: 0)
         splitView.autosaveName = Self.splitAutosaveName
     }
+
+    /// Follows Cmd with a local monitor, which also sees the key when a terminal pane has the focus (KTD14).
+    private func trackCommandKey() {
+        NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [commandKey] event in
+            commandKey.isDown = event.modifierFlags.contains(.command)
+            return event
+        }
+        // Cmd+Tab releases the key in another app, so no event tells us.
+        NotificationCenter.default.addObserver(self, selector: #selector(commandKeyReleased),
+                                               name: NSApplication.didResignActiveNotification, object: nil)
+    }
+
+    @objc private func commandKeyReleased(_ notification: Notification) { commandKey.isDown = false }
 
     /// Puts the panes of the selected project in the split, or shows the hint.
     private func refresh() {
