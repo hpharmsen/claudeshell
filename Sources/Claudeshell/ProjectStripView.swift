@@ -7,12 +7,13 @@ final class PassiveHostingView<Content: View>: NSHostingView<Content> {
     override var acceptsFirstResponder: Bool { false }
 }
 
-/// The strip below the tiles bar: links, git state and workflow step of the selected project, and its summary.
+/// The strip below the tiles bar: the summary of the selected project first, then its git state, workflow step and links.
 struct ProjectStripView: View {
     /// Always the same, with or without data, so arriving data never moves the terminals (KTD1).
     static let height: CGFloat = 62
     private static let ink = Color(hex: "#24292F")
     private static let gray = Color(hex: "#6E7781")
+    private static let line = Color(hex: "#D0D7DE")
     private static let rowHeight: CGFloat = 16
 
     let store: ProjectStore
@@ -20,27 +21,96 @@ struct ProjectStripView: View {
     unowned let actions: MainWindowController
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 14) {
             if let id = store.selectedID {
                 let data = info.info(id)
-                facts(data, of: id)
                 summary(data, of: id)
+                Rectangle().fill(Self.line).frame(width: 1)
+                facts(data, of: id)
             }
         }
         .font(.system(size: 12))
         .foregroundStyle(Self.ink)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .frame(height: Self.height)
-        .background(Color(hex: "#F6F8FA"))
-        .overlay(alignment: .bottom) { Rectangle().fill(Color(hex: "#D0D7DE")).frame(height: 1) }
+        .background(Color.white)
+        .overlay(alignment: .bottom) { Rectangle().fill(Self.line).frame(height: 1) }
         .environment(\.colorScheme, .light)
     }
 
-    /// The left column: the links, the git state and the workflow step, each on its own line.
+    /// The summary on at most three lines, with its date behind it, and the refresh button.
+    private func summary(_ data: ProjectInfo, of id: Project.ID) -> some View {
+        HStack(alignment: .top, spacing: 6) {
+            summaryText(data)
+                .lineLimit(3)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .contentShape(Rectangle())
+                .contextMenu {
+                    Button("Kopieer samenvatting") {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(data.summary?.text ?? "", forType: .string)
+                    }
+                    .disabled(data.summary == nil)
+                }
+            Group {
+                if info.isSummarising(id) {
+                    ProgressView().controlSize(.small).scaleEffect(0.7)
+                } else {
+                    Button { actions.refreshSummary(id) } label: { Image(systemName: "arrow.clockwise") }
+                        .buttonStyle(.borderless)
+                        .focusable(false)
+                        .help("Ververs de samenvatting")
+                }
+            }
+            .frame(width: 16, height: Self.rowHeight)
+        }
+    }
+
+    /// The summary, small behind it the date it was made, and in red that the last refresh failed.
+    private func summaryText(_ data: ProjectInfo) -> Text {
+        let small = Font.system(size: 10)
+        var text = Text(data.summary?.text ?? "Nog geen samenvatting").font(.system(size: 13))
+            .foregroundColor(data.summary == nil ? Self.gray : Self.ink)
+        if let date = data.summary?.date {
+            text = text + Text("  " + date.formatted(Self.dateStyle)).font(small).foregroundColor(Self.gray)
+        }
+        if data.summaryFailed {
+            text = text + Text("  Verversen lukte niet").font(small).foregroundColor(Color(hex: "#CF222E"))
+        }
+        return text
+    }
+
+    /// The narrow column on the right: the git state, the workflow step and the links, each on its own line.
     private func facts(_ data: ProjectInfo, of id: Project.ID) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .trailing, spacing: 0) {
+            Group {
+                if let git = data.git {
+                    let details = Self.details(of: git)
+                    HStack(spacing: 5) {
+                        // Green for clean and pushed, orange when something is still open (R49).
+                        Circle().fill(Color(hex: details.isEmpty ? "#1A7F37" : "#BC4C00")).frame(width: 7, height: 7)
+                        if details.isEmpty {
+                            Text("\(Self.branch(of: git)) · schoon").foregroundStyle(Self.gray)
+                        } else {
+                            Text(Self.branch(of: git)).bold() + Text(" · " + details.joined(separator: " · "))
+                        }
+                    }
+                }
+            }
+            .frame(height: Self.rowHeight)
+            Group {
+                if let step = data.step {
+                    Text(Self.label(of: step.kind))
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color(hex: "#0550AE"))
+                        .padding(.horizontal, 7)
+                        .background(Color(hex: "#DDF4FF"), in: Capsule())
+                        .help(step.kind == .handoff ? "docs/handoff/\(step.document)" : step.document)
+                }
+            }
+            .frame(height: Self.rowHeight)
             HStack(spacing: 10) {
                 ForEach(LinkKind.allCases, id: \.self) { kind in
                     if let url = data.links[kind] {
@@ -52,25 +122,9 @@ struct ProjectStripView: View {
                 }
             }
             .frame(height: Self.rowHeight)
-            Group {
-                if let git = data.git {
-                    let isClean = git.changedFiles == 0 && git.unpushed == 0
-                    Text(Self.text(of: git))
-                        .fontWeight(isClean ? .regular : .bold)
-                        .foregroundStyle(isClean ? Self.gray : Self.ink)
-                }
-            }
-            .frame(height: Self.rowHeight)
-            Group {
-                if let step = data.step {
-                    Text(Self.label(of: step.kind))
-                        .help(step.kind == .handoff ? "docs/handoff/\(step.document)" : step.document)
-                }
-            }
-            .frame(height: Self.rowHeight)
         }
         .lineLimit(1)
-        .frame(width: 300, alignment: .leading)
+        .frame(width: 270, alignment: .trailing)
         .contentShape(Rectangle())
         .contextMenu {
             Button("Live-link…") { actions.editLink(.live, of: id) }
@@ -81,55 +135,21 @@ struct ProjectStripView: View {
         }
     }
 
-    /// The right column: the summary on at most three lines, with its date and the refresh button.
-    private func summary(_ data: ProjectInfo, of id: Project.ID) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            Text(data.summary?.text ?? "Nog geen samenvatting")
-                .foregroundStyle(data.summary == nil ? Self.gray : Self.ink)
-                .lineLimit(3)
-                .frame(maxWidth: .infinity, alignment: .topLeading)
-                .contextMenu {
-                    Button("Kopieer samenvatting") {
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(data.summary?.text ?? "", forType: .string)
-                    }
-                    .disabled(data.summary == nil)
-                }
-            VStack(alignment: .trailing, spacing: 2) {
-                HStack(spacing: 4) {
-                    if let date = data.summary?.date {
-                        Text(date.formatted(Self.dateStyle)).foregroundStyle(Self.gray)
-                    }
-                    if info.isSummarising(id) {
-                        ProgressView().controlSize(.small).scaleEffect(0.7).frame(width: 16, height: 16)
-                    } else {
-                        Button { actions.refreshSummary(id) } label: { Image(systemName: "arrow.clockwise") }
-                            .buttonStyle(.borderless)
-                            .focusable(false)
-                            .help("Ververs de samenvatting")
-                    }
-                }
-                if data.summaryFailed {
-                    Text("Verversen lukte niet").foregroundStyle(Color(hex: "#CF222E"))
-                }
-            }
-            .font(.system(size: 10))
-            .fixedSize()
-        }
-    }
-
     private static let dateStyle = Date.FormatStyle(locale: Locale(identifier: "nl_NL")).day().month(.abbreviated).hour().minute()
 
-    /// The git state as one line: `main · schoon`, or `main · 3 gewijzigd · 2 niet gepusht`.
-    private static func text(of git: GitState) -> String {
-        var parts = [git.branch == GitState.detachedBranch ? "losse HEAD" : git.branch]
-        if git.changedFiles > 0 { parts.append("\(git.changedFiles) gewijzigd") }
+    private static func branch(of git: GitState) -> String {
+        git.branch == GitState.detachedBranch ? "losse HEAD" : git.branch
+    }
+
+    /// What is still open in a repository: `3 gewijzigd`, `2 niet gepusht`, `geen upstream`; empty when clean and pushed.
+    private static func details(of git: GitState) -> [String] {
+        var details = git.changedFiles > 0 ? ["\(git.changedFiles) gewijzigd"] : []
         switch git.unpushed {
-        case nil: parts.append("geen upstream")
-        case let count? where count > 0: parts.append("\(count) niet gepusht")
+        case nil: details.append("geen upstream")
+        case let count? where count > 0: details.append("\(count) niet gepusht")
         default: break
         }
-        return (parts.count == 1 ? parts + ["schoon"] : parts).joined(separator: " · ")
+        return details
     }
 
     private static func label(of kind: WorkflowStep.Kind) -> String {

@@ -130,7 +130,7 @@ The context menu of a tile corrects the result. An image HP chooses gives `custo
 
 ## Project strip
 
-The strip sits between the tiles bar and the split, 62 points high whatever it shows, so arriving data never moves the terminals. It opens when a project goes from active to running. Cmd+I, 'Beeld > Projectstrook' and the button in the strip close and open it per project; the closed set lives in memory only. Opening and closing swaps one constraint and never touches the focus.
+The strip sits between the tiles bar and the split, 62 points high whatever it shows, so arriving data never moves the terminals. The summary stands first, on the left; a narrow column on the right holds the git state with a dot (green when clean and pushed, orange otherwise), the workflow step and the links. It opens when a project goes from active to running. Cmd+I, 'Beeld > Projectstrook' and the button on the right of the tiles bar close and open it per project; the closed set lives in memory only. Opening and closing swaps one constraint and never touches the focus.
 
 All data lives in `ProjectInfoStore` per project id, so a late answer for one project never shows under another.
 
