@@ -23,7 +23,7 @@ public enum DomainGuesser {
         }
         let homepage = #/^\s*homepage\s*=\s*["']([^"'\n]+)["']/#.ignoresCase().anchorsMatchLineEndings()
         if let match = read("pyproject.toml")?.firstMatch(of: homepage) { candidates.append(String(match.1)) }
-        for file in settingsFiles(in: root, depth: settingsDepth) {
+        for file in [root.appendingPathComponent("settings.py")] + settingsFiles(in: root, depth: settingsDepth) {
             guard let contents = try? String(contentsOf: file, encoding: .utf8) else { continue }
             // Python comments go first, so an apostrophe in a comment cannot pair up with a quote.
             let code = contents.replacing(#/#.*/#, with: "")
