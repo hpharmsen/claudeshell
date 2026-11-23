@@ -32,7 +32,8 @@ import os
 
         let sessions = SessionManager(store: store, tracker: tracker, eventsPath: eventLog.fileURL.path,
                                       settingsPath: settingsURL.path)
-        let windowController = MainWindowController(store: store, tracker: tracker, sessions: sessions)
+        let windowController = MainWindowController(store: store, tracker: tracker, sessions: sessions,
+                                                    icons: IconStore(store: store, support: support))
         self.sessions = sessions
         self.windowController = windowController
         NSApp.mainMenu = MainMenu.make(target: windowController)

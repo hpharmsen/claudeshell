@@ -13,13 +13,15 @@ struct TilesBarView: View {
 
     let store: ProjectStore
     let tracker: AttentionTracker
+    let icons: IconStore
     let commandKey: CommandKeyState
     unowned let actions: MainWindowController
 
     var body: some View {
         HStack(spacing: 2) {
             ForEach(Array(store.barProjects.enumerated()), id: \.element.id) { index, project in
-                TileView(project: project, shortcut: commandKey.isDown ? Self.shortcut(forTile: index) : "",
+                TileView(project: project, icon: icons.images[project.id],
+                         shortcut: commandKey.isDown ? Self.shortcut(forTile: index) : "",
                          isRunning: store.status(of: project.id) == .running, isSelected: store.selectedID == project.id,
                          attention: tracker.state(of: project.id))
                     .onTapGesture { actions.select(project.id) }
@@ -68,10 +70,19 @@ struct TilesBarView: View {
         Divider()
         openInFinderButton(for: project)
         Button("Hernoemen…") { actions.rename(project.id) }
-        Menu("Kleur") {
-            ForEach(Array(ColorPalette.colors.enumerated()), id: \.element) { index, hex in
-                Button { store.setColor(hex, for: project.id) } label: {
-                    Label { Text("Kleur \(index + 1)") } icon: { Image(nsImage: Self.swatch(hex)) }
+        Menu("Icoon") {
+            Button("Kies afbeelding…") { actions.chooseIcon(project.id) }
+            Button("Website…") { actions.editWebsite(project.id) }
+            Button("Opnieuw zoeken") { icons.searchAgain(project.id) }.disabled(project.iconState == .custom)
+            Button("Icoon weghalen") { icons.remove(project.id) }.disabled(icons.images[project.id] == nil)
+        }
+        // The color shows only behind the initials (R35).
+        if icons.images[project.id] == nil {
+            Menu("Kleur") {
+                ForEach(Array(ColorPalette.colors.enumerated()), id: \.element) { index, hex in
+                    Button { store.setColor(hex, for: project.id) } label: {
+                        Label { Text("Kleur \(index + 1)") } icon: { Image(nsImage: Self.swatch(hex)) }
+                    }
                 }
             }
         }
@@ -98,6 +109,7 @@ struct TilesBarView: View {
 /// One tile: the icon area with the name below it; greyed when nothing runs, white with a dark line when selected.
 private struct TileView: View {
     let project: Project
+    let icon: NSImage?
     let shortcut: String
     let isRunning: Bool
     let isSelected: Bool
@@ -107,7 +119,7 @@ private struct TileView: View {
 
     var body: some View {
         VStack(spacing: 2) {
-            IconArea(project: project)
+            IconArea(project: project, icon: icon)
                 .grayscale(isRunning ? 0 : 1)
                 .opacity(isRunning ? 1 : 0.45)
                 .overlay {
@@ -148,18 +160,26 @@ private struct TileView: View {
     }
 }
 
-/// The square of a tile: the initials on the project color.
+/// The square of a tile: the icon, or without one the initials on the project color.
 private struct IconArea: View {
     static let shape = RoundedRectangle(cornerRadius: 7)
 
     let project: Project
+    let icon: NSImage?
 
     var body: some View {
-        Text(project.initials)
-            .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(TileView.ink)
-            .frame(width: 36, height: 36)
-            .background(Color(hex: project.color), in: Self.shape)
+        ZStack {
+            if let icon {
+                Image(nsImage: icon).resizable().interpolation(.high)
+            } else {
+                Color(hex: project.color)
+                Text(project.initials)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(TileView.ink)
+            }
+        }
+        .frame(width: 36, height: 36)
+        .clipShape(Self.shape)
     }
 }
 

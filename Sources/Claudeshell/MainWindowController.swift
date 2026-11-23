@@ -1,6 +1,7 @@
 import AppKit
 import ClaudeshellCore
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// The window: tiles bar on top, the two panes of the selected project below. Also handles every user action.
 final class MainWindowController: NSWindowController {
@@ -10,15 +11,17 @@ final class MainWindowController: NSWindowController {
     private let store: ProjectStore
     private let tracker: AttentionTracker
     private let sessions: SessionManager
+    private let icons: IconStore
     private let commandKey = CommandKeyState()
     private let splitView = NSSplitView()
     private let slots = [NSView(), NSView()]
     private let hint = NSTextField(labelWithString: "Kies een project in de balk, of zoek er een met Cmd+P.")
 
-    init(store: ProjectStore, tracker: AttentionTracker, sessions: SessionManager) {
+    init(store: ProjectStore, tracker: AttentionTracker, sessions: SessionManager, icons: IconStore) {
         self.store = store
         self.tracker = tracker
         self.sessions = sessions
+        self.icons = icons
         let window = NSWindow(
             contentRect: .zero,
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
@@ -44,7 +47,8 @@ final class MainWindowController: NSWindowController {
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
     private func buildLayout(in window: NSWindow) {
-        let bar = NSHostingView(rootView: TilesBarView(store: store, tracker: tracker, commandKey: commandKey, actions: self))
+        let bar = NSHostingView(rootView: TilesBarView(store: store, tracker: tracker, icons: icons, commandKey: commandKey,
+                                                        actions: self))
         splitView.isVertical = true
         splitView.dividerStyle = .thin
         slots.forEach(splitView.addArrangedSubview)
@@ -128,21 +132,37 @@ final class MainWindowController: NSWindowController {
 
     func remove(_ id: Project.ID) {
         store.remove(id)
+        icons.forget(id)
         refresh()
     }
 
     func rename(_ id: Project.ID) {
         guard let project = store.project(id) else { return }
-        let field = NSTextField(string: project.name)
-        field.frame = NSRect(x: 0, y: 0, width: 260, height: 24)
-        let alert = NSAlert()
-        alert.messageText = "Naam wijzigen"
-        alert.accessoryView = field
-        alert.addButton(withTitle: "Bewaar")
-        alert.addButton(withTitle: "Annuleer")
-        alert.window.initialFirstResponder = field
-        if alert.runModal() == .alertFirstButtonReturn { store.rename(id, to: field.stringValue) }
+        if let name = ask("Naam wijzigen", value: project.name) { store.rename(id, to: name) }
         refresh()
+    }
+
+    /// Sets the website whose favicon is the icon; an accepted one starts a search round.
+    func editWebsite(_ id: Project.ID) {
+        guard let project = store.project(id) else { return }
+        if let website = ask("Website van \(project.name)", value: project.website ?? "") {
+            if store.setWebsite(website, for: id) {
+                icons.searchAgain(id)
+            } else {
+                let alert = NSAlert()
+                alert.messageText = "Dat is geen geldige website."
+                alert.runModal()
+            }
+        }
+        refresh()
+    }
+
+    func chooseIcon(_ id: Project.ID) {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.image]
+        panel.prompt = "Kies"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        icons.setCustom(imageAt: url, for: id)
     }
 
     func addProject() {
@@ -154,6 +174,7 @@ final class MainWindowController: NSWindowController {
         // The folder of a running project selects that project.
         let project = store.add(path: url.path)
         if store.status(of: project.id) == .running { show(project.id) }
+        icons.search(project.id)
     }
 
     @objc func selectTile(_ sender: NSMenuItem) {
@@ -176,5 +197,18 @@ final class MainWindowController: NSWindowController {
         if let previous = store.selectedID { tracker.leave(previous) }
         store.select(id)
         refresh()
+    }
+
+    /// Asks for one line of text; nil when HP cancels.
+    private func ask(_ title: String, value: String) -> String? {
+        let field = NSTextField(string: value)
+        field.frame = NSRect(x: 0, y: 0, width: 260, height: 24)
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.accessoryView = field
+        alert.addButton(withTitle: "Bewaar")
+        alert.addButton(withTitle: "Annuleer")
+        alert.window.initialFirstResponder = field
+        return alert.runModal() == .alertFirstButtonReturn ? field.stringValue : nil
     }
 }

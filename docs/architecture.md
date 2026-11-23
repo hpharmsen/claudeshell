@@ -1,6 +1,6 @@
 # Architecture
 
-Claudeshell is a native Mac app that shows every Claude Code project as a coloured tile. A tile shows whether Claude is busy or waits for HP, and a click or shortcut opens the project with a shell on the left and Claude on the right.
+Claudeshell is a native Mac app that shows every Claude Code project as a tile: its icon with the name below it. The app finds the icons itself; a project without one shows its initials on its colour. A tile shows whether Claude is busy or waits for HP, and a click or shortcut opens the project with a shell on the left and Claude on the right.
 
 ## Two targets
 
@@ -19,9 +19,14 @@ The icon is drawn by `scripts/make-icon.swift`; `Support/AppIcon.icns` is its ou
 
 | File | What it holds |
 |---|---|
-| `Project.swift` | Shared types: `Project`, `ProjectStatus`, `PaneID`, `PaneKind`, `AttentionState`, and the start frame of the window |
+| `Project.swift` | Shared types: `Project` with its initials, `ProjectStatus`, `IconState`, `PaneID`, `PaneKind`, `AttentionState`, and the start frame of the window |
 | `ProjectStore.swift` | The ordered project list, status per project, selection, and storage |
 | `ColorPalette.swift` | 16 fixed pastel tile colours and the choice of the next free one |
+| `IconFinder.swift` | The candidate icon files in a project folder, best first |
+| `DomainGuesser.swift` | The domains that are literally in a project: folder name, `CNAME`, `package.json`, `pyproject.toml`, `ALLOWED_HOSTS` |
+| `FaviconLocator.swift` | The candidate favicon URLs of a web page, best first |
+| `IconImage.swift` | Decodes an image, tells whether it is too wide, and makes the square PNG of 128 pixels |
+| `IconResolver.swift` | One search round for a project, and the icon files in `icons/` |
 | `WezTermImporter.swift` | Parser for the `projects` and `simple_projects` tables in `~/.wezterm.lua` |
 | `HookSettings.swift` | Generates the Claude Code settings file with the hooks |
 | `HookEventLog.swift` | Reads new lines from the events file |
@@ -36,6 +41,7 @@ The icon is drawn by `scripts/make-icon.swift`; `Support/AppIcon.icns` is its ou
 | `main.swift`, `AppDelegate.swift` | Start-up: store, first-start import, hook settings, events watcher, sound |
 | `MainWindowController.swift` | The window, the split with two slots, and every user action |
 | `TilesBarView.swift` | SwiftUI tiles bar with context menu, drag and drop, inactive dropdown and + |
+| `IconStore.swift` | The loaded icon per project, the search rounds, and the icon actions of the context menu |
 | `SessionManager.swift` | Starts, stops and restarts the panes of running projects |
 | `TerminalPaneView.swift`, `TerminalTheme.swift` | A SwiftTerm view per pane with the bundled fonts; the shell pane has the dark WezTerm colours, the Claude pane a light palette |
 | `QuickOpenPanel.swift` | The Cmd+P finder as a sheet |
@@ -93,6 +99,22 @@ Known gaps:
 
 `claude --continue` exits with `No conversation found to continue` when the folder has no conversation yet. The command therefore falls back: `claude ... --continue ... || exec claude ...`. The fallback also runs when a resumed Claude exits with an error code.
 
+## Icons
+
+The icon of a project is one file, `icons/<project id>.png`: a square PNG of 128 pixels. A project has an icon when that file exists, so the bar works without network and without the source file.
+
+`IconStore` loads the files at start and runs a search round for every project without `iconState`, also the inactive ones, and for a project that is added. A round runs off the main actor, rounds of different projects run side by side, and a tile shows initials until its icon is there. After a round `iconState` is `searched`, also without a hit, so the app searches once per project.
+
+One round of `IconResolver` takes the first usable image in this order:
+
+1. The favicon of the website that is filled in for the project.
+2. The candidates of `IconFinder` in the project folder.
+3. The favicon of a domain from `DomainGuesser`.
+
+An image whose long side is more than one and a half times the short side, such as a wordmark, is skipped. A favicon comes from the `link` tags of the page, then from `/apple-touch-icon.png` and `/favicon.ico`. Only `http` and `https`, 10 seconds per request, at most 2 MB per file, no retries. A round without a hit leaves the existing file as it is.
+
+The context menu of a tile corrects the result. An image HP chooses gives `custom`: it is stored whatever its shape and no round replaces it. 'Icoon weghalen' deletes the file and gives `removed`: the app does not search again by itself. 'Opnieuw zoeken' and a changed website start a new round, except for `custom`. Removing a project deletes its icon file.
+
 ## Panes and sessions
 
 - A project has a list of panes; version 1 always starts two (shell, Claude). `PaneID`, the tracker and `LaunchSpec` do not assume that number. Only `MainWindowController` has exactly two slots.
@@ -105,7 +127,8 @@ Known gaps:
 
 | Path | Content |
 |---|---|
-| `~/Library/Application Support/Claudeshell/projects.json` | Projects in bar order, inactive ones last, with `status` active or inactive. Running and the selection are never stored. |
+| `~/Library/Application Support/Claudeshell/projects.json` | Projects in bar order, inactive ones last, with `status` active or inactive, and optionally `website` and `iconState` (`searched`, `custom` or `removed`). Running and the selection are never stored. |
+| `~/Library/Application Support/Claudeshell/icons/` | The icon of a project as `<project id>.png` |
 | `~/Library/Application Support/Claudeshell/projects.corrupt.json` | An unreadable `projects.json`, set aside |
 | `~/Library/Application Support/Claudeshell/hooks.json` | The generated hook settings, rewritten at every start |
 | `~/Library/Application Support/Claudeshell/events` | The events file, emptied at every start; `tail -f` shows the hooks live |
