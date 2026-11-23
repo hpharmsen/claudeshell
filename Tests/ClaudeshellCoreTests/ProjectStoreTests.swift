@@ -533,3 +533,39 @@ func linkWithoutValidHostIsRefusedAndKeepsOldValue(text: String) {
     projects.forEach { store.setStatus(.running, for: $0.id) }
     #expect(store.nextRunning(after: projects[1].id) == projects[2].id)
 }
+
+// MARK: Last shown project
+
+@MainActor @Test func lastShownProjectSurvivesARestart() {
+    let url = tempFileURL()
+    let (store, projects) = makeStore("a", "b", at: url)
+    store.select(projects[0].id)
+    store.select(projects[1].id)
+    #expect(store.lastShownID == nil)
+    #expect(ProjectStore(fileURL: url).lastShownID == projects[1].id)
+}
+
+@MainActor @Test func nothingIsLastShownAfterTheSelectionWasCleared() {
+    let url = tempFileURL()
+    let (store, projects) = makeStore("a", at: url)
+    store.select(projects[0].id)
+    store.select(nil)
+    #expect(ProjectStore(fileURL: url).lastShownID == nil)
+}
+
+@MainActor @Test func nothingIsLastShownWithoutAnEarlierRun() {
+    let url = tempFileURL()
+    _ = makeStore("a", at: url)
+    #expect(ProjectStore(fileURL: url).lastShownID == nil)
+}
+
+@MainActor @Test func aProjectThatLeftTheBarOrTheAppIsNotLastShown() {
+    for leave in [{ (store: ProjectStore, id: Project.ID) in store.setStatus(.inactive, for: id) },
+                  { (store: ProjectStore, id: Project.ID) in store.remove(id) }] {
+        let url = tempFileURL()
+        let (store, projects) = makeStore("a", at: url)
+        store.select(projects[0].id)
+        leave(store, projects[0].id)
+        #expect(ProjectStore(fileURL: url).lastShownID == nil)
+    }
+}
