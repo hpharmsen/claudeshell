@@ -37,12 +37,17 @@ public struct LaunchSpec: Equatable, Sendable {
         ]
     }
 
-    /// A relative path from the pane's output, made absolute when it names a file in the pane's folder.
+    /// A path from the pane's output as an absolute path, when it names a file; relative paths start in the pane's folder.
     public func resolvedLink(_ link: String) -> String {
-        guard !link.isEmpty, !link.hasPrefix("/"), !link.hasPrefix("~") else { return link }
-        let path = (directory as NSString).appendingPathComponent(link)
-        // A source location such as 'main.swift:12:4' stays on the link but is not part of the file name.
-        let file = path.replacing(/:[0-9]+(:[0-9]+)?$/, with: "")
-        return FileManager.default.fileExists(atPath: file) ? path : link
+        // The link detection takes the full stop of a sentence along: 'see docs/notes.md.'
+        let trimmed = link.replacing(/[.,;:!?]+$/, with: "")
+        for candidate in [link, trimmed] where !candidate.isEmpty {
+            let expanded = (candidate as NSString).expandingTildeInPath
+            let path = expanded.hasPrefix("/") ? expanded : (directory as NSString).appendingPathComponent(expanded)
+            // A source location such as 'main.swift:12:4' stays on the link but is not part of the file name.
+            let file = path.replacing(/:[0-9]+(:[0-9]+)?$/, with: "")
+            if FileManager.default.fileExists(atPath: file) { return path }
+        }
+        return link
     }
 }
