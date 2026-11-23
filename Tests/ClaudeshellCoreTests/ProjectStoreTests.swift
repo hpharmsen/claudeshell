@@ -342,6 +342,128 @@ private func tempFileURL() -> URL {
     #expect(store.projects[0].iconState == nil)
 }
 
+// MARK: Link overrides
+
+@MainActor @Test func bareDomainIsStoredAsLiveLinkWithHTTPS() {
+    let (store, projects) = makeStore("a")
+    #expect(store.setLink("voorbeeld.nl", kind: .live, for: projects[0].id))
+    #expect(store.project(projects[0].id)?.linkOverrides == [.live: "https://voorbeeld.nl"])
+}
+
+@MainActor @Test(arguments: [
+    ("localhost:8003", "http://localhost:8003"),
+    ("127.0.0.1:9000", "http://127.0.0.1:9000"),
+    ("localhost", "http://localhost"),
+    ("localhost/pad", "http://localhost/pad"),
+    ("LocalHost:8003", "http://LocalHost:8003"),
+    ("https://localhost:8443", "https://localhost:8443"),
+    ("localhost.voorbeeld.nl", "https://localhost.voorbeeld.nl"),
+]) func localLinkGetsHTTP(text: String, expected: String) {
+    let (store, projects) = makeStore("a")
+    #expect(store.setLink(text, kind: .localhost, for: projects[0].id))
+    #expect(store.project(projects[0].id)?.linkOverrides?[.localhost] == expected)
+}
+
+@MainActor @Test func linkWithSchemeIsStoredAsEntered() {
+    let (store, projects) = makeStore("a")
+    #expect(store.setLink("http://voorbeeld.nl/pad", kind: .live, for: projects[0].id))
+    #expect(store.project(projects[0].id)?.linkOverrides?[.live] == "http://voorbeeld.nl/pad")
+}
+
+@MainActor @Test func linkIsTrimmedBeforeStoring() {
+    let (store, projects) = makeStore("a")
+    #expect(store.setLink("  voorbeeld.nl/repo\n", kind: .git, for: projects[0].id))
+    #expect(store.project(projects[0].id)?.linkOverrides?[.git] == "https://voorbeeld.nl/repo")
+}
+
+@MainActor @Test(arguments: ["", "   ", " \t\n"]) func blankLinkStoresEmptyValueThatSurvivesReload(text: String) {
+    let url = tempFileURL()
+    let (store, projects) = makeStore("a", at: url)
+    store.setLink("voorbeeld.nl", kind: .live, for: projects[0].id)
+    #expect(store.setLink(text, kind: .live, for: projects[0].id))
+    #expect(store.project(projects[0].id)?.linkOverrides == [.live: ""])
+    #expect(ProjectStore(fileURL: url).project(projects[0].id)?.linkOverrides == [.live: ""])
+}
+
+@MainActor @Test(arguments: ["geen link", "geenlink", "http://", "https://geen link.nl"])
+func linkWithoutValidHostIsRefusedAndKeepsOldValue(text: String) {
+    let url = tempFileURL()
+    let (store, projects) = makeStore("a", at: url)
+    store.setLink("voorbeeld.nl", kind: .live, for: projects[0].id)
+    #expect(!store.setLink(text, kind: .live, for: projects[0].id))
+    #expect(store.project(projects[0].id)?.linkOverrides == [.live: "https://voorbeeld.nl"])
+    #expect(ProjectStore(fileURL: url).project(projects[0].id)?.linkOverrides == [.live: "https://voorbeeld.nl"])
+}
+
+@MainActor @Test func refusedLinkOnProjectWithoutOverridesLeavesTheFieldEmpty() {
+    let (store, projects) = makeStore("a")
+    #expect(!store.setLink("geen link", kind: .git, for: projects[0].id))
+    #expect(store.project(projects[0].id)?.linkOverrides == nil)
+}
+
+@MainActor @Test func setLinkOfUnknownProjectIsRefusedAndChangesNothing() {
+    let url = tempFileURL()
+    let (store, projects) = makeStore("a", at: url)
+    #expect(!store.setLink("voorbeeld.nl", kind: .live, for: UUID()))
+    #expect(store.projects == projects)
+    #expect(ProjectStore(fileURL: url).projects == projects)
+}
+
+@MainActor @Test func linksOfDifferentKindsLiveSideBySideAndSurviveReload() {
+    let url = tempFileURL()
+    let (store, projects) = makeStore("a", "b", at: url)
+    store.setLink("voorbeeld.nl", kind: .live, for: projects[0].id)
+    store.setLink("localhost:8003", kind: .localhost, for: projects[0].id)
+    store.setLink("voorbeeld.nl/repo", kind: .git, for: projects[0].id)
+    let expected: [LinkKind: String] = [.live: "https://voorbeeld.nl", .localhost: "http://localhost:8003",
+                                        .git: "https://voorbeeld.nl/repo"]
+    let loaded = ProjectStore(fileURL: url)
+    #expect(loaded.project(projects[0].id)?.linkOverrides == expected)
+    #expect(loaded.project(projects[1].id)?.linkOverrides == nil)
+}
+
+@MainActor @Test func clearLinkOverridesClearsAllKindsAndKeepsTheOtherFields() {
+    let url = tempFileURL()
+    let (store, projects) = makeStore("a", at: url)
+    store.setWebsite("voorbeeld.nl", for: projects[0].id)
+    store.setIconState(.custom, for: projects[0].id)
+    let before = store.project(projects[0].id)
+    store.setLink("voorbeeld.nl", kind: .live, for: projects[0].id)
+    store.setLink("", kind: .localhost, for: projects[0].id)
+    store.setLink("voorbeeld.nl/repo", kind: .git, for: projects[0].id)
+    store.clearLinkOverrides(for: projects[0].id)
+    #expect(store.project(projects[0].id)?.linkOverrides == nil)
+    #expect(store.project(projects[0].id) == before)
+    #expect(ProjectStore(fileURL: url).project(projects[0].id) == before)
+}
+
+@MainActor @Test func clearLinkOverridesOfUnknownProjectChangesNothing() {
+    let (store, projects) = makeStore("a")
+    store.setLink("voorbeeld.nl", kind: .live, for: projects[0].id)
+    store.clearLinkOverrides(for: UUID())
+    #expect(store.project(projects[0].id)?.linkOverrides == [.live: "https://voorbeeld.nl"])
+}
+
+@MainActor @Test func localhostIsStillRefusedAsWebsite() {
+    let (store, projects) = makeStore("a")
+    #expect(!store.setWebsite("localhost:8003", for: projects[0].id))
+    #expect(store.project(projects[0].id)?.website == nil)
+}
+
+@MainActor @Test func fileWithoutLinkOverridesLoadsWithTheFieldEmpty() throws {
+    let url = tempFileURL()
+    let json = """
+        [{"id": "11111111-2222-3333-4444-555555555555", "name": "Voorbeeld", "path": "/p/voorbeeld",
+          "color": "#3B82F6", "website": "https://voorbeeld.nl", "iconState": "searched", "status": "active"}]
+        """
+    try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+    try Data(json.utf8).write(to: url)
+    let store = ProjectStore(fileURL: url)
+    #expect(store.projects.map(\.name) == ["Voorbeeld"])
+    #expect(store.projects[0].linkOverrides == nil)
+    #expect(store.setLink("voorbeeld.nl", kind: .live, for: store.projects[0].id))
+}
+
 // MARK: Storage
 
 @MainActor @Test func missingFileGivesEmptyStoreAndFirstSaveCreatesFile() {
