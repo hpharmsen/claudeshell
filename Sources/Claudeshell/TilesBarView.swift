@@ -30,6 +30,7 @@ struct TilesBarView: View {
                     Menu(project.name) {
                         Button("Terugzetten") { store.setStatus(.active, for: project.id) }
                         Button("Verwijderen") { actions.remove(project.id) }
+                        openInFinderButton(for: project)
                     }
                 }
             } label: {
@@ -58,7 +59,7 @@ struct TilesBarView: View {
             Button("Verwijderen") { actions.remove(project.id) }
         }
         Divider()
-        Button("Open in Finder") { NSWorkspace.shared.open(URL(fileURLWithPath: project.path)) }
+        openInFinderButton(for: project)
         Button("Hernoemen…") { actions.rename(project.id) }
         Menu("Kleur") {
             ForEach(Array(ColorPalette.colors.enumerated()), id: \.element) { index, hex in
@@ -67,6 +68,10 @@ struct TilesBarView: View {
                 }
             }
         }
+    }
+
+    private func openInFinderButton(for project: Project) -> some View {
+        Button("Open in Finder") { NSWorkspace.shared.open(URL(fileURLWithPath: project.path)) }
     }
 
     /// The key that selects a tile together with Cmd: 1...9, 0, then the same with Option (R16).
