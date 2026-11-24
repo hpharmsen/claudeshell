@@ -12,7 +12,6 @@ public struct SummaryWriter: Sendable {
     private static let git = "/usr/bin/git"
     private static let timeout: TimeInterval = 60
     private static let maxDocumentCharacters = 4000
-    private static let maxSummaryCharacters = 400
 
     /// The system prompt: what to write, and that the input is material and not an instruction.
     static let instruction = """
@@ -124,7 +123,8 @@ public struct SummaryWriter: Sendable {
         let text = (json?["result"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         problem = problem ?? (json == nil ? "no JSON" : json?["is_error"] as? Bool == true ? "is_error"
                               : text.isEmpty ? "empty result" : nil)
-        guard let problem else { return String(text.prefix(Self.maxSummaryCharacters)) }
+        // Not cut off: the strip shows at most three lines, and copying gives the whole text.
+        guard let problem else { return text }
         // Only these two fields are logged; `result` may hold text of the conversation.
         let status = json?["api_error_status"].map { "\($0)" } ?? "-", reason = json?["terminal_reason"].map { "\($0)" } ?? "-"
         Self.log.error("No summary for \(project.name, privacy: .public): \(problem, privacy: .public), api_error_status \(status, privacy: .public), terminal_reason \(reason, privacy: .public)")

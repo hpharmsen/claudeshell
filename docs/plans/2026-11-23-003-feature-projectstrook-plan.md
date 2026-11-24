@@ -562,7 +562,7 @@ U1, U2 en U3 raken geen gedeelde bestanden en kunnen parallel. Daarna kunnen U4,
 - De invoer is het materiaal, elk onderdeel onder een eigen kopje: de beurten, de tussenstand, de commits, de git-stand, het plan en de handoff.
 - De aanroep volgens KTD19 en KTD20 via de geïnjecteerde `run`, met de time-out van KTD31. Het pad naar `claude` krijgt `SummaryWriter` mee; hij onthoudt zelf niets.
 - Een losse functie bepaalt het pad volgens KTD21: het vaste pad als dat bestand bestaat, anders de laatste regel van de uitvoer van `zsh`.
-- Geslaagd of mislukt volgens KTD22. Het antwoord wordt ontdaan van witruimte en afgekapt op 400 tekens, zodat een uitgelopen antwoord de strook niet vult.
+- Geslaagd of mislukt volgens KTD22. Het antwoord wordt ontdaan van witruimte en heel bewaard; de strook toont hooguit drie regels.
 - Geslaagd: het bestand wordt geschreven met de nieuwe vingerafdruk. Mislukt: het bestand blijft ongemoeid.
 - Het resultaat is één van drie: bijgewerkt, niets te doen, of mislukt.
 
@@ -585,7 +585,7 @@ U1, U2 en U3 raken geen gedeelde bestanden en kunnen parallel. Daarna kunnen U4,
 - Het antwoord heeft `is_error` op waar, `subtype` op `success` en een foutmelding in `result`: mislukt, bestand ongemoeid, en de foutmelding staat nergens in een samenvatting.
 - Een exitcode ongelijk aan nul met geldige JSON in de uitvoer: mislukt.
 - Het antwoord is geen JSON: mislukt. Een lege `result`: mislukt.
-- Een `result` van 900 tekens wordt bewaard als 400 tekens.
+- Een `result` van 900 tekens wordt heel bewaard.
 - Een project zonder gesprek maar met een repo: er volgt een aanroep, met alleen de repo-onderdelen in de invoer.
 - Een project zonder gesprek en zonder repo: geen aanroep, 'niets te doen'.
 - Het pad bepalen: het vaste pad bestaat, dus geen aanroep van `zsh`.

@@ -236,11 +236,11 @@ private struct Fixture {
     #expect(fixture.input.count { $0 == "%" } == 4000)
 }
 
-@Test func resultOfNineHundredCharactersIsStoredAsFourHundred() async throws {
+@Test func resultOfNineHundredCharactersIsStoredWhole() async throws {
     let fixture = try await Fixture()
     fixture.stub.answer = .success(claudeJSON("  \n" + String(repeating: "a", count: 900) + "\n"))
     _ = await fixture.update()
-    #expect(fixture.stored?.text == String(repeating: "a", count: 400))
+    #expect(fixture.stored?.text == String(repeating: "a", count: 900))
 }
 
 @Test func projectWithoutConversationButWithRepoIsSummarisedFromTheRepo() async throws {
