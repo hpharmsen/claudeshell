@@ -37,6 +37,19 @@ final class TerminalPaneView: LocalProcessTerminalView {
         // it stays Meta on keys without text, so Option+Left and Option+Enter keep working.
         optionAsMetaKey = false
         optionAsMetaKeyForFunctionalKeys = true
+        // SwiftTerm takes no drops; a dropped file pastes its path, as in Terminal.app.
+        registerForDraggedTypes([.fileURL])
+    }
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation { .copy }
+
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        let urls = sender.draggingPasteboard.readObjects(forClasses: [NSURL.self],
+                                                         options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
+        guard !urls.isEmpty else { return false }
+        pasteText(DroppedFiles.pasteText(urls.map(\.path)))
+        window?.makeFirstResponder(self)
+        return true
     }
 
     @available(*, unavailable)
