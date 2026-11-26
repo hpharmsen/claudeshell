@@ -48,7 +48,7 @@ De tiles zijn nu gekleurde vlakken met een naam. Het palet heeft 16 pasteltinten
 
 ### Requirements
 
-De nummering loopt door op `docs/brainstorms/2026-11-22-claudeshell-requirements.md`.
+De nummering loopt door op `docs/brainstorms/2026-11-22-maestro-requirements.md`.
 
 **De tile**
 

@@ -23,7 +23,7 @@ The project strip was built from a plan with eight units, six of them in two par
 - Every unit is test-first, and the test is committed red before the implementation.
 - Subagents do not commit; only the orchestrating session does, otherwise they collide on `index.lock`.
 
-The obvious setup, three subagents in the one feature worktree, does not work in this package. `Package.swift` has a single test target, `ClaudeshellCoreTests`, so `swift build --build-tests` compiles every test file at once. A test file of unit B that refers to a type that does not exist yet breaks the build for unit A too. No worker can run its own tests while a peer is half way, and parallel builds also wait on each other for the one `.build` folder.
+The obvious setup, three subagents in the one feature worktree, does not work in this package. `Package.swift` has a single test target, `MaestroCoreTests`, so `swift build --build-tests` compiles every test file at once. A test file of unit B that refers to a type that does not exist yet breaks the build for unit A too. No worker can run its own tests while a peer is half way, and parallel builds also wait on each other for the one `.build` folder.
 
 ## Guidance
 

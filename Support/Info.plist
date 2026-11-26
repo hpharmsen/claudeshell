@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleExecutable</key>
-    <string>Claudeshell</string>
+    <string>Maestro</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
-    <string>nl.harmsen.claudeshell</string>
+    <string>nl.harmsen.maestro</string>
     <key>CFBundleName</key>
-    <string>Claudeshell</string>
+    <string>Maestro</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>

@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # /publish
 
-Brengt de stand van `main` naar GitHub en naar `/Applications/Claudeshell.app`.
+Brengt de stand van `main` naar GitHub en naar `/Applications/Maestro.app`.
 Draai elke stap pas als de vorige gelukt is. Mislukt er iets, stop dan en meld de
 werkelijke uitvoer. Probeer niets te forceren.
 
@@ -45,14 +45,14 @@ meld dat. Nooit `--force`. Controleer daarna dat `git rev-parse HEAD` gelijk is 
 
 | Check | Commando |
 |---|---|
-| Geïnstalleerd is gelijk aan de build | `cmp build/Claudeshell.app/Contents/MacOS/Claudeshell /Applications/Claudeshell.app/Contents/MacOS/Claudeshell` |
-| De binary is van deze run | `stat -f %m /Applications/Claudeshell.app/Contents/MacOS/Claudeshell` is minstens het begintijdstip |
-| De handtekening klopt | `codesign --verify /Applications/Claudeshell.app` |
+| Geïnstalleerd is gelijk aan de build | `cmp build/Maestro.app/Contents/MacOS/Maestro /Applications/Maestro.app/Contents/MacOS/Maestro` |
+| De binary is van deze run | `stat -f %m /Applications/Maestro.app/Contents/MacOS/Maestro` is minstens het begintijdstip |
+| De handtekening klopt | `codesign --verify /Applications/Maestro.app` |
 | Geen ongecommitte wijzigingen bij het bouwen | `git status --short` is leeg |
 
 ## 6. Melden
 
 Kort: de commits (hash en onderwerp), dat `origin/main` op dezelfde commit staat, en
-de tijd van de nieuwe binary. Herstart Claudeshell niet zelf: deze sessie draait er
+de tijd van de nieuwe binary. Herstart Maestro niet zelf: deze sessie draait er
 misschien in. Zeg dat HP de app moet herstarten, en dat macOS daarna opnieuw om toegang
 tot mappen vraagt.

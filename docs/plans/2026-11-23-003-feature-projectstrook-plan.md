@@ -32,7 +32,7 @@ Onder de tiles-balk komt een strook van een paar regels die bij het gekozen proj
 
 ### Problem Frame
 
-Claudeshell laat zien welk project wacht en brengt HP er snel heen. Eenmaal in een project dat een tijd stillag, begint het zoeken: wat deed ik hier het laatst, staat er nog iets ongepusht, zat ik midden in een plan of een build, en wat was de URL ook alweer. Het antwoord zit verspreid over het Claude-gesprek, `git status`, de `docs/`-folder en HP's geheugen.
+Maestro laat zien welk project wacht en brengt HP er snel heen. Eenmaal in een project dat een tijd stillag, begint het zoeken: wat deed ik hier het laatst, staat er nog iets ongepusht, zat ik midden in een plan of een build, en wat was de URL ook alweer. Het antwoord zit verspreid over het Claude-gesprek, `git status`, de `docs/`-folder en HP's geheugen.
 
 ### Key Decisions
 
@@ -42,7 +42,7 @@ Claudeshell laat zien welk project wacht en brengt HP er snel heen. Eenmaal in e
 - **De samenvatting staat direct in de strook.** Links de korte gegevens, rechts de samenvatting; de strook is daarom een paar regels hoog. (session-settled: user-directed, gekozen boven een strook van één regel met de samenvatting achter een klik.) Governs R47, R55.
 - **De strook is dicht te klikken en opent bij het starten van een project of op verzoek.** (session-settled: user-directed.) Governs R52, R53.
 - **Geen apart paneel.** Alles wat de strook biedt, staat in de strook zelf. De lijst met gewijzigde bestanden en niet-gepushte commits geeft `git status` in de shell-pane ernaast. Governs R54, R58.
-- **De samenvatting leunt op het gesprek en op de repo.** (session-settled: user-approved, gekozen boven alleen het gesprek of alleen de repo: zo komt ook werk in beeld dat nooit gecommit is, en werk dat buiten Claudeshell gebeurde.) Governs R56.
+- **De samenvatting leunt op het gesprek en op de repo.** (session-settled: user-approved, gekozen boven alleen het gesprek of alleen de repo: zo komt ook werk in beeld dat nooit gecommit is, en werk dat buiten Maestro gebeurde.) Governs R56.
 - **De samenvatting wordt gemaakt als het project stopt.** (session-settled: user-approved, gekozen boven maken bij openen en alleen op verzoek: ze staat er direct als HP terugkomt.) Governs R57.
 
 ### Requirements
@@ -67,7 +67,7 @@ De nummering loopt door op `docs/plans/2026-11-23-002-feature-tile-iconen-plan.m
 
 - R55. De samenvatting is één of twee zinnen in het Nederlands: wat er het laatst gedaan is en wat er nog openstaat.
 - R56. Ze is gebaseerd op het laatste Claude-gesprek in de projectfolder, de recente commits, en het nieuwste document in `docs/plans` en `docs/handoff`.
-- R57. Ze wordt gemaakt en bewaard zodra een project van running naar active gaat. Voor een project dat bij het afsluiten van de app nog running was, en voor werk dat buiten Claudeshell gebeurde, wordt ze bijgewerkt bij de volgende start van de app of van het project.
+- R57. Ze wordt gemaakt en bewaard zodra een project van running naar active gaat. Voor een project dat bij het afsluiten van de app nog running was, en voor werk dat buiten Maestro gebeurde, wordt ze bijgewerkt bij de volgende start van de app of van het project.
 - R58. Bij de samenvatting staat een knop om haar nu te verversen.
 - R59. Het afsluiten van de app wacht niet op samenvattingen. Een samenvatting die bij het afsluiten niet af kwam, wordt later alsnog gemaakt.
 - R60. Is er sinds de vorige samenvatting geen nieuw gesprek en geen nieuwe commit, dan wordt er geen nieuwe gemaakt.
@@ -143,9 +143,9 @@ Buiten scope:
 ### Sources / Research
 
 - Origin: `docs/brainstorms/2026-11-23-projectstrook-requirements.md`. De open vragen daaruit zijn beantwoord in de Key Technical Decisions hieronder.
-- De layout van het window en alle gebruikersacties: `Sources/Claudeshell/MainWindowController.swift`. Tussen balk en split zit precies één constraint.
-- Het patroon voor achtergrondwerk met een geïnjecteerde functie: `Sources/Claudeshell/IconStore.swift` en `Sources/ClaudeshellCore/IconResolver.swift`.
-- Het patroon voor setters met validatie: `setWebsite` in `Sources/ClaudeshellCore/ProjectStore.swift`.
+- De layout van het window en alle gebruikersacties: `Sources/Maestro/MainWindowController.swift`. Tussen balk en split zit precies één constraint.
+- Het patroon voor achtergrondwerk met een geïnjecteerde functie: `Sources/Maestro/IconStore.swift` en `Sources/MaestroCore/IconResolver.swift`.
+- Het patroon voor setters met validatie: `setWebsite` in `Sources/MaestroCore/ProjectStore.swift`.
 - De Claude CLI 2.1.319: `claude --help`, de CLI-referentie, en tien proefaanroepen in een lege map op 2026-11-23, waarvan acht met een verzonnen invoer van 49 KB.
 - De gespreksbestanden van Claude Code in `~/.claude/projects/`: 345 stuks bekeken op opbouw, omvang en wat hervatten erin schrijft.
 - De hp-skills `start`, `build`, `bug`, `finish`, `handoff`, `pickup` en `publish`.
@@ -168,7 +168,7 @@ Buiten scope:
 
 **Gegevens verzamelen**
 
-- KTD6. **Alle logica in `ClaudeshellCore`, met het starten van een proces als geïnjecteerde functie.** Net als `fetch` bij `IconResolver` krijgen de onderdelen een `run` mee: programma, argumenten, werkmap en optioneel invoer, met de uitvoer als tekst terug. `GitState`, `WorkflowStep`, `ProjectLinks` en `SummaryWriter` zijn `Sendable` structs met asynchrone functies buiten de main actor, naar het model van `IconResolver`. Tests gebruiken de echte `Subprocess.run` met git-repo's in een tijdelijke map, of geven een functie met vaste antwoorden mee.
+- KTD6. **Alle logica in `MaestroCore`, met het starten van een proces als geïnjecteerde functie.** Net als `fetch` bij `IconResolver` krijgen de onderdelen een `run` mee: programma, argumenten, werkmap en optioneel invoer, met de uitvoer als tekst terug. `GitState`, `WorkflowStep`, `ProjectLinks` en `SummaryWriter` zijn `Sendable` structs met asynchrone functies buiten de main actor, naar het model van `IconResolver`. Tests gebruiken de echte `Subprocess.run` met git-repo's in een tijdelijke map, of geven een functie met vaste antwoorden mee.
 - KTD7. **`Subprocess.run` houdt geen thread van de taken-pool bezet.** Het einde van het proces hervat de wachtende taak, de pipes worden op een eigen queue leeggelezen, en het annuleren van de taak beëindigt het proces. Een aanroep van `claude` mag 60 seconden duren; die tijd mag de rest van de app niet ophouden.
 - KTD8. **De git-stand komt uit één aanroep: `git --no-optional-locks status --porcelain=v2 --branch`.** Zonder `--no-optional-locks` houdt `git status` kort `index.lock` vast, en dan kan een `git commit` van Claude of HP in dezelfde repo mislukken. `# branch.head` geeft de branch, het aantal regels zonder `#` het aantal gewijzigde bestanden inclusief nieuwe, en `# branch.ab +N` de niet-gepushte commits. Ontbreekt `# branch.ab`, dan heeft de branch geen upstream en toont de strook 'geen upstream' in plaats van een nul. Een fout van git betekent: geen repo, en het deel ontbreekt. Governs R49.
 - KTD9. **Eén lus haalt de git-stand en de workflow-stap op: ophalen, vijf seconden wachten, opnieuw.** De lus loopt alleen voor het geselecteerde project, alleen als de strook open is en de app vooraan staat. Hij begint opnieuw, met direct een ronde, bij het wisselen van project, bij het openen van de strook en als de app weer vooraan komt. Een aanroep kost 0,05 seconde. De rondes lopen na elkaar, dus er loopt nooit meer dan één tegelijk, en het resultaat van een afgebroken ronde wordt weggegooid. Dat dekt de beurt van Claude en wat HP in de shell doet zonder de hooks of de shell te hoeven volgen. Governs R50, R51.
@@ -217,12 +217,12 @@ Buiten scope:
 **De samenvatting: wanneer**
 
 - KTD29. **Bij elke samenvatting hoort een vingerafdruk: de naam van het gespreksbestand, de `uuid` van het laatste echte bericht daarin, en de commit van `HEAD`.** Is de vingerafdruk gelijk aan die van de bewaarde samenvatting, dan volgt er geen aanroep. Een hervat gesprek waarin niets gezegd wordt, schrijft alleen regels van andere types bij (`system`, `cost-state`, `last-prompt`, `permission-mode`), sommige met een eigen `uuid`; daarom telt alleen de `uuid` van een echt bericht. Governs R60.
-- KTD30. **Vier momenten brengen de samenvatting bij:** een project gaat van running naar active, de app start, een project gaat van active naar running, en de ververs-knop. Bij de start loopt de app alle projecten in de balk na; dat vangt het afsluiten op (R59), en ook een crash. De app staat dagen open, dus het starten van een project controleert opnieuw: dat vangt werk op dat buiten Claudeshell gebeurde en een project dat net is toegevoegd. De ververs-knop slaat de vingerafdruk over. Governs R57, R58, R59.
+- KTD30. **Vier momenten brengen de samenvatting bij:** een project gaat van running naar active, de app start, een project gaat van active naar running, en de ververs-knop. Bij de start loopt de app alle projecten in de balk na; dat vangt het afsluiten op (R59), en ook een crash. De app staat dagen open, dus het starten van een project controleert opnieuw: dat vangt werk op dat buiten Maestro gebeurde en een project dat net is toegevoegd. De ververs-knop slaat de vingerafdruk over. Governs R57, R58, R59.
 - KTD31. **Een wachtrij maakt de samenvattingen één voor één, met een time-out van 60 seconden per aanroep en zonder retries.** Het project dat HP start en het project waarvan hij op verversen drukt, gaan vooraan. Een project staat er hooguit één keer in; komt het erbij terwijl het aan de beurt is, dan volgt er daarna nog één ronde. De eerste start kost bij 19 projecten een tot twee minuten op de achtergrond en ongeveer $0,08. Governs R59.
 - KTD32. **Mislukt een aanroep in de ronde bij de start, dan stopt die ronde.** Zonder netwerk of zonder inlog zouden er anders 19 mislukkingen op een rij volgen. De rest volgt bij het starten van een project of bij de volgende start van de app.
 - KTD33. **Na het stoppen van een project wacht de app twee seconden met de samenvatting.** `SessionManager.stop` stuurt SIGHUP en na één seconde SIGKILL; daarna schrijft niemand meer in het gespreksbestand. Governs R57.
 - KTD34. **Een samenvatting staat in `summaries/<project-id>.json` in de support-folder:** de tekst, het moment van maken en de vingerafdruk. Een project verwijderen verwijdert zijn bestand, ook als er op dat moment nog een aanroep voor loopt. Governs R57.
-- KTD35. **Bij het afsluiten en bij 'Herstart Claudeshell' breekt de app lopende aanroepen af zonder erop te wachten.** Governs R59.
+- KTD35. **Bij het afsluiten en bij 'Herstart Maestro' breekt de app lopende aanroepen af zonder erop te wachten.** Governs R59.
 
 ### Maten van de strook
 
@@ -260,7 +260,7 @@ flowchart LR
 ### Output Structure
 
 ```
-Sources/ClaudeshellCore/
+Sources/MaestroCore/
   Project.swift            (gewijzigd: linkOverrides, LinkKind)
   ProjectStore.swift       (gewijzigd: setLink, clearLinkOverrides)
   Subprocess.swift         (nieuw)
@@ -273,10 +273,10 @@ Sources/ClaudeshellCore/
   SummaryWriter.swift      (nieuw)
   SummaryQueue.swift       (nieuw)
   ProjectInfoStore.swift   (nieuw)
-Sources/Claudeshell/
+Sources/Maestro/
   ProjectStripView.swift   (nieuw)
   MainWindowController.swift, MainMenu.swift, AppDelegate.swift (gewijzigd)
-Tests/ClaudeshellCoreTests/
+Tests/MaestroCoreTests/
   SubprocessTests.swift, GitStateTests.swift, LocalhostGuesserTests.swift,
   ProjectLinksTests.swift, WorkflowStepTests.swift, TranscriptReaderTests.swift,
   ProjectSummaryTests.swift, SummaryWriterTests.swift, SummaryQueueTests.swift,
@@ -311,14 +311,14 @@ Tests/ClaudeshellCoreTests/
 
 | # | Task | Touches | Depends on |
 |---|------|---------|------------|
-| U1 | Projectmodel: eigen links, en het samenvattingsbestand | `Sources/ClaudeshellCore/Project.swift`, `Sources/ClaudeshellCore/ProjectStore.swift`, `Sources/ClaudeshellCore/ProjectSummary.swift`, `Tests/ClaudeshellCoreTests/ProjectTests.swift`, `Tests/ClaudeshellCoreTests/ProjectStoreTests.swift`, `Tests/ClaudeshellCoreTests/ProjectSummaryTests.swift` | - |
-| U2 | Processen starten en de git-stand | `Sources/ClaudeshellCore/Subprocess.swift`, `Sources/ClaudeshellCore/GitState.swift`, `Tests/ClaudeshellCoreTests/SubprocessTests.swift`, `Tests/ClaudeshellCoreTests/GitStateTests.swift` | - |
-| U3 | Het laatste gesprek lezen | `Sources/ClaudeshellCore/TranscriptReader.swift`, `Tests/ClaudeshellCoreTests/TranscriptReaderTests.swift` | - |
-| U4 | Links: localhost raden en de drie links samenstellen | `Sources/ClaudeshellCore/LocalhostGuesser.swift`, `Sources/ClaudeshellCore/ProjectLinks.swift`, `Tests/ClaudeshellCoreTests/LocalhostGuesserTests.swift`, `Tests/ClaudeshellCoreTests/ProjectLinksTests.swift` | U1, U2 |
-| U5 | De workflow-stap | `Sources/ClaudeshellCore/WorkflowStep.swift`, `Tests/ClaudeshellCoreTests/WorkflowStepTests.swift` | U2 |
-| U6 | De samenvatting maken | `Sources/ClaudeshellCore/SummaryWriter.swift`, `Tests/ClaudeshellCoreTests/SummaryWriterTests.swift` | U1, U2, U3 |
-| U7 | Het geheugen van de strook | `Sources/ClaudeshellCore/SummaryQueue.swift`, `Sources/ClaudeshellCore/ProjectInfoStore.swift`, `Tests/ClaudeshellCoreTests/SummaryQueueTests.swift`, `Tests/ClaudeshellCoreTests/ProjectInfoStoreTests.swift` | U4, U5, U6 |
-| U8 | De strook in de app | `Sources/Claudeshell/ProjectStripView.swift`, `Sources/Claudeshell/MainWindowController.swift`, `Sources/Claudeshell/MainMenu.swift`, `Sources/Claudeshell/AppDelegate.swift`, `docs/architecture.md`, `docs/doel.md` | U7 |
+| U1 | Projectmodel: eigen links, en het samenvattingsbestand | `Sources/MaestroCore/Project.swift`, `Sources/MaestroCore/ProjectStore.swift`, `Sources/MaestroCore/ProjectSummary.swift`, `Tests/MaestroCoreTests/ProjectTests.swift`, `Tests/MaestroCoreTests/ProjectStoreTests.swift`, `Tests/MaestroCoreTests/ProjectSummaryTests.swift` | - |
+| U2 | Processen starten en de git-stand | `Sources/MaestroCore/Subprocess.swift`, `Sources/MaestroCore/GitState.swift`, `Tests/MaestroCoreTests/SubprocessTests.swift`, `Tests/MaestroCoreTests/GitStateTests.swift` | - |
+| U3 | Het laatste gesprek lezen | `Sources/MaestroCore/TranscriptReader.swift`, `Tests/MaestroCoreTests/TranscriptReaderTests.swift` | - |
+| U4 | Links: localhost raden en de drie links samenstellen | `Sources/MaestroCore/LocalhostGuesser.swift`, `Sources/MaestroCore/ProjectLinks.swift`, `Tests/MaestroCoreTests/LocalhostGuesserTests.swift`, `Tests/MaestroCoreTests/ProjectLinksTests.swift` | U1, U2 |
+| U5 | De workflow-stap | `Sources/MaestroCore/WorkflowStep.swift`, `Tests/MaestroCoreTests/WorkflowStepTests.swift` | U2 |
+| U6 | De samenvatting maken | `Sources/MaestroCore/SummaryWriter.swift`, `Tests/MaestroCoreTests/SummaryWriterTests.swift` | U1, U2, U3 |
+| U7 | Het geheugen van de strook | `Sources/MaestroCore/SummaryQueue.swift`, `Sources/MaestroCore/ProjectInfoStore.swift`, `Tests/MaestroCoreTests/SummaryQueueTests.swift`, `Tests/MaestroCoreTests/ProjectInfoStoreTests.swift` | U4, U5, U6 |
+| U8 | De strook in de app | `Sources/Maestro/ProjectStripView.swift`, `Sources/Maestro/MainWindowController.swift`, `Sources/Maestro/MainMenu.swift`, `Sources/Maestro/AppDelegate.swift`, `docs/architecture.md`, `docs/doel.md` | U7 |
 
 U1, U2 en U3 raken geen gedeelde bestanden en kunnen parallel. Daarna kunnen U4, U5 en U6 parallel. U7 en U8 volgen na elkaar.
 
@@ -330,7 +330,7 @@ U1, U2 en U3 raken geen gedeelde bestanden en kunnen parallel. Daarna kunnen U4,
 
 **Dependencies:** geen.
 
-**Files:** `Sources/ClaudeshellCore/Project.swift`, `Sources/ClaudeshellCore/ProjectStore.swift`, `Sources/ClaudeshellCore/ProjectSummary.swift`, `Tests/ClaudeshellCoreTests/ProjectTests.swift`, `Tests/ClaudeshellCoreTests/ProjectStoreTests.swift`, `Tests/ClaudeshellCoreTests/ProjectSummaryTests.swift`
+**Files:** `Sources/MaestroCore/Project.swift`, `Sources/MaestroCore/ProjectStore.swift`, `Sources/MaestroCore/ProjectSummary.swift`, `Tests/MaestroCoreTests/ProjectTests.swift`, `Tests/MaestroCoreTests/ProjectStoreTests.swift`, `Tests/MaestroCoreTests/ProjectSummaryTests.swift`
 
 **Approach:**
 
@@ -366,7 +366,7 @@ U1, U2 en U3 raken geen gedeelde bestanden en kunnen parallel. Daarna kunnen U4,
 
 **Dependencies:** geen.
 
-**Files:** `Sources/ClaudeshellCore/Subprocess.swift`, `Sources/ClaudeshellCore/GitState.swift`, `Tests/ClaudeshellCoreTests/SubprocessTests.swift`, `Tests/ClaudeshellCoreTests/GitStateTests.swift`
+**Files:** `Sources/MaestroCore/Subprocess.swift`, `Sources/MaestroCore/GitState.swift`, `Tests/MaestroCoreTests/SubprocessTests.swift`, `Tests/MaestroCoreTests/GitStateTests.swift`
 
 **Approach:**
 
@@ -412,7 +412,7 @@ U1, U2 en U3 raken geen gedeelde bestanden en kunnen parallel. Daarna kunnen U4,
 
 **Dependencies:** geen.
 
-**Files:** `Sources/ClaudeshellCore/TranscriptReader.swift`, `Tests/ClaudeshellCoreTests/TranscriptReaderTests.swift`
+**Files:** `Sources/MaestroCore/TranscriptReader.swift`, `Tests/MaestroCoreTests/TranscriptReaderTests.swift`
 
 **Approach:**
 
@@ -458,7 +458,7 @@ U1, U2 en U3 raken geen gedeelde bestanden en kunnen parallel. Daarna kunnen U4,
 
 **Dependencies:** U1, U2.
 
-**Files:** `Sources/ClaudeshellCore/LocalhostGuesser.swift`, `Sources/ClaudeshellCore/ProjectLinks.swift`, `Tests/ClaudeshellCoreTests/LocalhostGuesserTests.swift`, `Tests/ClaudeshellCoreTests/ProjectLinksTests.swift`
+**Files:** `Sources/MaestroCore/LocalhostGuesser.swift`, `Sources/MaestroCore/ProjectLinks.swift`, `Tests/MaestroCoreTests/LocalhostGuesserTests.swift`, `Tests/MaestroCoreTests/ProjectLinksTests.swift`
 
 **Approach:**
 
@@ -498,7 +498,7 @@ U1, U2 en U3 raken geen gedeelde bestanden en kunnen parallel. Daarna kunnen U4,
 
 **Dependencies:** U2.
 
-**Files:** `Sources/ClaudeshellCore/WorkflowStep.swift`, `Tests/ClaudeshellCoreTests/WorkflowStepTests.swift`
+**Files:** `Sources/MaestroCore/WorkflowStep.swift`, `Tests/MaestroCoreTests/WorkflowStepTests.swift`
 
 **Approach:**
 
@@ -552,7 +552,7 @@ U1, U2 en U3 raken geen gedeelde bestanden en kunnen parallel. Daarna kunnen U4,
 
 **Dependencies:** U1, U2, U3.
 
-**Files:** `Sources/ClaudeshellCore/SummaryWriter.swift`, `Tests/ClaudeshellCoreTests/SummaryWriterTests.swift`
+**Files:** `Sources/MaestroCore/SummaryWriter.swift`, `Tests/MaestroCoreTests/SummaryWriterTests.swift`
 
 **Approach:**
 
@@ -605,12 +605,12 @@ U1, U2 en U3 raken geen gedeelde bestanden en kunnen parallel. Daarna kunnen U4,
 
 **Dependencies:** U4, U5, U6.
 
-**Files:** `Sources/ClaudeshellCore/SummaryQueue.swift`, `Sources/ClaudeshellCore/ProjectInfoStore.swift`, `Tests/ClaudeshellCoreTests/SummaryQueueTests.swift`, `Tests/ClaudeshellCoreTests/ProjectInfoStoreTests.swift`
+**Files:** `Sources/MaestroCore/SummaryQueue.swift`, `Sources/MaestroCore/ProjectInfoStore.swift`, `Tests/MaestroCoreTests/SummaryQueueTests.swift`, `Tests/MaestroCoreTests/ProjectInfoStoreTests.swift`
 
 **Approach:**
 
 - `SummaryQueue` is een waarde zonder eigen werk: de wachtende project-id's op volgorde, elk met of het geforceerd is, en het project dat aan de beurt is. De regels staan in KTD31.
-- `ProjectInfoStore` is `@MainActor @Observable` in `ClaudeshellCore`, zoals `ProjectStore` en `AttentionTracker`. Hij heeft geen AppKit nodig. Hij krijgt de `ProjectStore`, de support-folder en de `run` mee.
+- `ProjectInfoStore` is `@MainActor @Observable` in `MaestroCore`, zoals `ProjectStore` en `AttentionTracker`. Hij heeft geen AppKit nodig. Hij krijgt de `ProjectStore`, de support-folder en de `run` mee.
 - Per project-id (KTD11): de links, de git-stand, de workflow-stap, de samenvatting, of er een samenvatting gemaakt wordt, en of de laatste poging mislukte.
 - De set dichtgeklikte projecten van KTD2, met `isOpen` voor het geselecteerde project, `toggle`, en het heropenen bij een geslaagde start.
 - `refresh(id)` haalt links, git-stand en workflow-stap op buiten de main actor en laadt de bewaarde samenvatting. `poll(id)` haalt alleen git-stand en workflow-stap op. Een pure functie zegt of de lus van KTD9 mag lopen: is er een selectie, is de strook open, staat de app vooraan. De lus zelf en het signaal 'app vooraan' horen bij U8.
@@ -658,7 +658,7 @@ U1, U2 en U3 raken geen gedeelde bestanden en kunnen parallel. Daarna kunnen U4,
 
 **Dependencies:** U7.
 
-**Files:** `Sources/Claudeshell/ProjectStripView.swift`, `Sources/Claudeshell/MainWindowController.swift`, `Sources/Claudeshell/MainMenu.swift`, `Sources/Claudeshell/AppDelegate.swift`, `docs/architecture.md`, `docs/doel.md`
+**Files:** `Sources/Maestro/ProjectStripView.swift`, `Sources/Maestro/MainWindowController.swift`, `Sources/Maestro/MainMenu.swift`, `Sources/Maestro/AppDelegate.swift`, `docs/architecture.md`, `docs/doel.md`
 
 **Approach:**
 
@@ -683,7 +683,7 @@ U1, U2 en U3 raken geen gedeelde bestanden en kunnen parallel. Daarna kunnen U4,
   - bij 'Resuming the last conversation': de aanroep voor de samenvatting laat geen gesprek achter.
 - `docs/doel.md` krijgt een alinea over de strook.
 
-**Execution note:** de logica is in U1 tot en met U7 getest; hier telt de controle met de hand in de gebouwde app, eerst met `CLAUDESHELL_SUPPORT` op een testfolder met een kopie van `projects.json`, daarna met de echte projecten.
+**Execution note:** de logica is in U1 tot en met U7 getest; hier telt de controle met de hand in de gebouwde app, eerst met `MAESTRO_SUPPORT` op een testfolder met een kopie van `projects.json`, daarna met de echte projecten.
 
 **Test scenarios:** geen nieuwe unit tests; U1 tot en met U7 dekken de logica.
 
@@ -725,8 +725,8 @@ U1, U2 en U3 raken geen gedeelde bestanden en kunnen parallel. Daarna kunnen U4,
 ## Verification Contract
 
 - `swift build` slaagt zonder waarschuwingen in eigen code.
-- `swift test` slaagt, zonder netwerk en zonder een echte aanroep van `claude`. Alle nieuwe logica in `ClaudeshellCore` heeft tests.
-- `./runlocal.sh` bouwt en opent `build/Claudeshell.app`.
+- `swift test` slaagt, zonder netwerk en zonder een echte aanroep van `claude`. Alle nieuwe logica in `MaestroCore` heeft tests.
+- `./runlocal.sh` bouwt en opent `build/Maestro.app`.
 - De Verification-lijst van U8 is met de hand doorlopen in de gebouwde app. Ze dekt AE19 tot en met AE24, AE26, AE27 en F6 tot en met F8. AE25 is gedekt door de tests van U5.
 - De bestaande verificatie werkt nog: klik, Cmd+cijfer, Cmd+P, de spring-sneltoets, het geluid en de iconen.
 

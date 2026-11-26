@@ -44,7 +44,7 @@ De tiles zijn nu gekleurde vlakken met een naam. Het palet heeft 16 pasteltinten
 
 ### Requirements
 
-De nummering loopt door op `docs/brainstorms/2026-11-22-claudeshell-requirements.md`.
+De nummering loopt door op `docs/brainstorms/2026-11-22-maestro-requirements.md`.
 
 **De tile**
 
@@ -121,9 +121,9 @@ Buiten scope:
 ### Sources / Research
 
 - Origin: `docs/brainstorms/2026-11-23-tile-iconen-requirements.md`. De open vragen daaruit zijn beantwoord in de Key Technical Decisions hieronder.
-- De huidige tile, het contextmenu en de sneltoetscijfers: `Sources/Claudeshell/TilesBarView.swift`.
-- Het patroon voor een dialoog met een tekstveld: `rename` in `Sources/Claudeshell/MainWindowController.swift`.
-- Opslag en het patroon voor setters: `Sources/ClaudeshellCore/ProjectStore.swift`.
+- De huidige tile, het contextmenu en de sneltoetscijfers: `Sources/Maestro/TilesBarView.swift`.
+- Het patroon voor een dialoog met een tekstveld: `rename` in `Sources/Maestro/MainWindowController.swift`.
+- Opslag en het patroon voor setters: `Sources/MaestroCore/ProjectStore.swift`.
 
 ---
 
@@ -141,8 +141,8 @@ Buiten scope:
 - KTD8. **Te breed is: de lange zijde meer dan anderhalf keer de korte.** Zo'n beeld wordt bij automatisch zoeken overgeslagen. Een afbeelding die HP zelf kiest, wordt altijd geaccepteerd en passend in het vierkant geschaald. Governs R42.
 - KTD9. **De app raadt alleen domeinen die letterlijk in het project staan.** Bronnen, in volgorde: de naam van de projectfolder als die zelf een domein is, een `CNAME`-bestand in de root, `homepage` in `package.json`, de homepage-URL in `pyproject.toml`, en de hosts in `ALLOWED_HOSTS` van een `settings.py` tot drie mappen diep. De app verzint geen domein uit de projectnaam. Afgewezen worden: `localhost`, IP-adressen, hosts zonder punt, wildcards, en hosts onder `herokuapp.com`, `github.com`, `github.io`, `gitlab.com`, `pypi.org`, `readthedocs.io` en `example.com`. Governs R41.
 - KTD10. **Favicon ophalen: eerst de pagina, dan vaste paden.** De app haalt `https://<domein>/` op en leest de `link`-tags. Kandidaten in volgorde: `apple-touch-icon`, daarna `rel="icon"` van groot naar klein volgens `sizes`, daarna `/apple-touch-icon.png` en `/favicon.ico`. De eerste die decodeert wint. Alleen `http` en `https`, tien seconden time-out per verzoek, hooguit 2 MB per bestand, geen retries. Een mislukte ronde is geen fout: de tile houdt wat hij had en er gaat een regel naar de log op niveau info. Governs R40, R41, R46.
-- KTD11. **Zoeklogica in `ClaudeshellCore`, met het netwerk als geïnjecteerde functie.** `IconResolver` krijgt een `fetch` mee van `URL` naar `Data`. Tests geven een functie met vaste antwoorden mee; de app geeft `URLSession` mee. Zo is de hele zoekvolgorde te testen zonder netwerk.
-- KTD12. **Beelden decoderen gaat via `NSImage`, ook in `ClaudeshellCore`.** `NSImage` leest PNG, JPEG, ICO, ICNS en SVG; ImageIO alleen leest geen SVG. Het gaat om decoderen en schalen, niet om UI, en de tests draaien op macOS. Bij een bestand met meerdere formaten (ICO, ICNS) telt de grootste.
+- KTD11. **Zoeklogica in `MaestroCore`, met het netwerk als geïnjecteerde functie.** `IconResolver` krijgt een `fetch` mee van `URL` naar `Data`. Tests geven een functie met vaste antwoorden mee; de app geeft `URLSession` mee. Zo is de hele zoekvolgorde te testen zonder netwerk.
+- KTD12. **Beelden decoderen gaat via `NSImage`, ook in `MaestroCore`.** `NSImage` leest PNG, JPEG, ICO, ICNS en SVG; ImageIO alleen leest geen SVG. Het gaat om decoderen en schalen, niet om UI, en de tests draaien op macOS. Bij een bestand met meerdere formaten (ICO, ICNS) telt de grootste.
 - KTD13. **De zoekronde draait buiten de main actor.** `IconStore` in de app-target is `@MainActor @Observable`, houdt de geladen beelden per project bij en start de rondes als `Task`. De balk tekent initialen tot `IconStore` een beeld heeft. Governs R43.
 - KTD14. **Cmd volgen via een lokale event-monitor op `flagsChanged`.** Een lokale monitor ziet de toets ook als de focus in een terminal-pane ligt. De cijfers verdwijnen ook als de app de focus verliest, anders blijven ze staan na Cmd+Tab. Governs R38.
 
@@ -179,7 +179,7 @@ flowchart LR
 ### Output Structure
 
 ```
-Sources/ClaudeshellCore/
+Sources/MaestroCore/
   Project.swift          (gewijzigd: website, iconState, initials)
   ProjectStore.swift     (gewijzigd: setters)
   IconFinder.swift       (nieuw)
@@ -187,12 +187,12 @@ Sources/ClaudeshellCore/
   FaviconLocator.swift   (nieuw)
   IconImage.swift        (nieuw)
   IconResolver.swift     (nieuw)
-Sources/Claudeshell/
+Sources/Maestro/
   IconStore.swift        (nieuw)
   TilesBarView.swift     (gewijzigd)
   MainWindowController.swift (gewijzigd)
   AppDelegate.swift      (gewijzigd)
-Tests/ClaudeshellCoreTests/
+Tests/MaestroCoreTests/
   IconFinderTests.swift, DomainGuesserTests.swift, FaviconLocatorTests.swift,
   IconImageTests.swift, IconResolverTests.swift   (nieuw)
 ```
@@ -219,12 +219,12 @@ Tests/ClaudeshellCoreTests/
 
 | # | Task | Touches | Depends on |
 |---|------|---------|------------|
-| U1 | Projectmodel: website, iconState, initialen | `Sources/ClaudeshellCore/Project.swift`, `Sources/ClaudeshellCore/ProjectStore.swift`, `Tests/ClaudeshellCoreTests/ProjectTests.swift`, `Tests/ClaudeshellCoreTests/ProjectStoreTests.swift` | - |
-| U2 | Iconen zoeken in de projectfolder | `Sources/ClaudeshellCore/IconFinder.swift`, `Tests/ClaudeshellCoreTests/IconFinderTests.swift` | - |
-| U3 | Domein raden en favicon-kandidaten bepalen | `Sources/ClaudeshellCore/DomainGuesser.swift`, `Sources/ClaudeshellCore/FaviconLocator.swift`, `Tests/ClaudeshellCoreTests/DomainGuesserTests.swift`, `Tests/ClaudeshellCoreTests/FaviconLocatorTests.swift` | - |
-| U4 | Beeld normaliseren en de zoekronde | `Sources/ClaudeshellCore/IconImage.swift`, `Sources/ClaudeshellCore/IconResolver.swift`, `Tests/ClaudeshellCoreTests/IconImageTests.swift`, `Tests/ClaudeshellCoreTests/IconResolverTests.swift` | U1, U2, U3 |
-| U5 | De nieuwe tile-vorm | `Sources/Claudeshell/TilesBarView.swift`, `Sources/Claudeshell/MainWindowController.swift` | U1 |
-| U6 | Iconen in de app: opslag, zoeken, rechtsklik | `Sources/Claudeshell/IconStore.swift`, `Sources/Claudeshell/TilesBarView.swift`, `Sources/Claudeshell/MainWindowController.swift`, `Sources/Claudeshell/AppDelegate.swift`, `docs/architecture.md`, `docs/doel.md` | U4, U5 |
+| U1 | Projectmodel: website, iconState, initialen | `Sources/MaestroCore/Project.swift`, `Sources/MaestroCore/ProjectStore.swift`, `Tests/MaestroCoreTests/ProjectTests.swift`, `Tests/MaestroCoreTests/ProjectStoreTests.swift` | - |
+| U2 | Iconen zoeken in de projectfolder | `Sources/MaestroCore/IconFinder.swift`, `Tests/MaestroCoreTests/IconFinderTests.swift` | - |
+| U3 | Domein raden en favicon-kandidaten bepalen | `Sources/MaestroCore/DomainGuesser.swift`, `Sources/MaestroCore/FaviconLocator.swift`, `Tests/MaestroCoreTests/DomainGuesserTests.swift`, `Tests/MaestroCoreTests/FaviconLocatorTests.swift` | - |
+| U4 | Beeld normaliseren en de zoekronde | `Sources/MaestroCore/IconImage.swift`, `Sources/MaestroCore/IconResolver.swift`, `Tests/MaestroCoreTests/IconImageTests.swift`, `Tests/MaestroCoreTests/IconResolverTests.swift` | U1, U2, U3 |
+| U5 | De nieuwe tile-vorm | `Sources/Maestro/TilesBarView.swift`, `Sources/Maestro/MainWindowController.swift` | U1 |
+| U6 | Iconen in de app: opslag, zoeken, rechtsklik | `Sources/Maestro/IconStore.swift`, `Sources/Maestro/TilesBarView.swift`, `Sources/Maestro/MainWindowController.swift`, `Sources/Maestro/AppDelegate.swift`, `docs/architecture.md`, `docs/doel.md` | U4, U5 |
 
 U1, U2 en U3 raken geen gedeelde bestanden en kunnen parallel. U5 kan naast U2, U3 en U4 lopen zodra U1 klaar is. U4 wacht op U1, U2 en U3. U6 sluit af en wacht op U4 en U5, omdat het dezelfde app-bestanden raakt als U5.
 
@@ -236,7 +236,7 @@ U1, U2 en U3 raken geen gedeelde bestanden en kunnen parallel. U5 kan naast U2, 
 
 **Dependencies:** geen.
 
-**Files:** `Sources/ClaudeshellCore/Project.swift`, `Sources/ClaudeshellCore/ProjectStore.swift`, `Tests/ClaudeshellCoreTests/ProjectTests.swift`, `Tests/ClaudeshellCoreTests/ProjectStoreTests.swift`
+**Files:** `Sources/MaestroCore/Project.swift`, `Sources/MaestroCore/ProjectStore.swift`, `Tests/MaestroCoreTests/ProjectTests.swift`, `Tests/MaestroCoreTests/ProjectStoreTests.swift`
 
 **Approach:**
 
@@ -270,7 +270,7 @@ U1, U2 en U3 raken geen gedeelde bestanden en kunnen parallel. U5 kan naast U2, 
 
 **Dependencies:** geen.
 
-**Files:** `Sources/ClaudeshellCore/IconFinder.swift`, `Tests/ClaudeshellCoreTests/IconFinderTests.swift`
+**Files:** `Sources/MaestroCore/IconFinder.swift`, `Tests/MaestroCoreTests/IconFinderTests.swift`
 
 **Approach:**
 
@@ -302,7 +302,7 @@ U1, U2 en U3 raken geen gedeelde bestanden en kunnen parallel. U5 kan naast U2, 
 
 **Dependencies:** geen.
 
-**Files:** `Sources/ClaudeshellCore/DomainGuesser.swift`, `Sources/ClaudeshellCore/FaviconLocator.swift`, `Tests/ClaudeshellCoreTests/DomainGuesserTests.swift`, `Tests/ClaudeshellCoreTests/FaviconLocatorTests.swift`
+**Files:** `Sources/MaestroCore/DomainGuesser.swift`, `Sources/MaestroCore/FaviconLocator.swift`, `Tests/MaestroCoreTests/DomainGuesserTests.swift`, `Tests/MaestroCoreTests/FaviconLocatorTests.swift`
 
 **Approach:**
 
@@ -339,7 +339,7 @@ U1, U2 en U3 raken geen gedeelde bestanden en kunnen parallel. U5 kan naast U2, 
 
 **Dependencies:** U1, U2, U3.
 
-**Files:** `Sources/ClaudeshellCore/IconImage.swift`, `Sources/ClaudeshellCore/IconResolver.swift`, `Tests/ClaudeshellCoreTests/IconImageTests.swift`, `Tests/ClaudeshellCoreTests/IconResolverTests.swift`
+**Files:** `Sources/MaestroCore/IconImage.swift`, `Sources/MaestroCore/IconResolver.swift`, `Tests/MaestroCoreTests/IconImageTests.swift`, `Tests/MaestroCoreTests/IconResolverTests.swift`
 
 **Approach:**
 
@@ -380,7 +380,7 @@ U1, U2 en U3 raken geen gedeelde bestanden en kunnen parallel. U5 kan naast U2, 
 
 **Dependencies:** U1.
 
-**Files:** `Sources/Claudeshell/TilesBarView.swift`, `Sources/Claudeshell/MainWindowController.swift`
+**Files:** `Sources/Maestro/TilesBarView.swift`, `Sources/Maestro/MainWindowController.swift`
 
 **Approach:**
 
@@ -392,7 +392,7 @@ U1, U2 en U3 raken geen gedeelde bestanden en kunnen parallel. U5 kan naast U2, 
 - Het sneltoetscijfer verdwijnt uit de vaste opmaak en wordt een overlay op het icoonvlak, zichtbaar zolang Cmd is ingedrukt (KTD14). `MainWindowController` plaatst de monitor en geeft de toestand door aan de balk. De bestaande functie `shortcut(forTile:)` levert de tekst.
 - `TilesBarView.height` wordt 67.
 
-**Execution note:** geen unit tests; dit is opmaak. Controle met de hand in de gebouwde app, met `CLAUDESHELL_SUPPORT` op een testfolder.
+**Execution note:** geen unit tests; dit is opmaak. Controle met de hand in de gebouwde app, met `MAESTRO_SUPPORT` op een testfolder.
 
 **Test scenarios:** geen; de logica die hier getest kan worden (initialen) zit in U1.
 
@@ -417,7 +417,7 @@ U1, U2 en U3 raken geen gedeelde bestanden en kunnen parallel. U5 kan naast U2, 
 
 **Dependencies:** U4, U5.
 
-**Files:** `Sources/Claudeshell/IconStore.swift`, `Sources/Claudeshell/TilesBarView.swift`, `Sources/Claudeshell/MainWindowController.swift`, `Sources/Claudeshell/AppDelegate.swift`, `docs/architecture.md`, `docs/doel.md`
+**Files:** `Sources/Maestro/IconStore.swift`, `Sources/Maestro/TilesBarView.swift`, `Sources/Maestro/MainWindowController.swift`, `Sources/Maestro/AppDelegate.swift`, `docs/architecture.md`, `docs/doel.md`
 
 **Approach:**
 
@@ -435,7 +435,7 @@ U1, U2 en U3 raken geen gedeelde bestanden en kunnen parallel. U5 kan naast U2, 
 - Fouten bij lezen of schrijven van een icoonbestand gaan naar `os.Logger`, categorie `Icons`.
 - `docs/architecture.md` krijgt de nieuwe bestanden in beide tabellen, de map `icons/` onder 'Files on disk', en een korte sectie over de zoekvolgorde. `docs/doel.md` beschrijft de tile als icoon met naam in plaats van een gekleurd vlak.
 
-**Execution note:** de logica is in U4 getest; hier telt de controle met de hand in de gebouwde app, eerst met `CLAUDESHELL_SUPPORT` op een testfolder met een kopie van `projects.json`, daarna met de echte projecten.
+**Execution note:** de logica is in U4 getest; hier telt de controle met de hand in de gebouwde app, eerst met `MAESTRO_SUPPORT` op een testfolder met een kopie van `projects.json`, daarna met de echte projecten.
 
 **Test scenarios:** geen nieuwe unit tests; U1 en U4 dekken de logica.
 
@@ -459,8 +459,8 @@ U1, U2 en U3 raken geen gedeelde bestanden en kunnen parallel. U5 kan naast U2, 
 ## Verification Contract
 
 - `swift build` slaagt zonder waarschuwingen in eigen code.
-- `swift test` slaagt, zonder netwerk. Alle nieuwe logica in `ClaudeshellCore` heeft tests.
-- `./runlocal.sh` bouwt en opent `build/Claudeshell.app`.
+- `swift test` slaagt, zonder netwerk. Alle nieuwe logica in `MaestroCore` heeft tests.
+- `./runlocal.sh` bouwt en opent `build/Maestro.app`.
 - De Verification-lijsten van U5 en U6 zijn met de hand doorlopen in de gebouwde app. Samen dekken ze AE9 tot en met AE18 en F4 en F5.
 - De bestaande verificatie van aandacht en wisselen (F1 tot en met F3) werkt nog: klik, Cmd+cijfer, Cmd+P, de spring-sneltoets en het geluid.
 

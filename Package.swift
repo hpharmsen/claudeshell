@@ -2,17 +2,17 @@
 import PackageDescription
 
 let package = Package(
-    name: "Claudeshell",
+    name: "Maestro",
     platforms: [.macOS(.v14)],
     dependencies: [
         .package(url: "https://github.com/migueldeicaza/SwiftTerm", exact: "1.99.3"),
     ],
     targets: [
-        .target(name: "ClaudeshellCore"),
+        .target(name: "MaestroCore"),
         .executableTarget(
-            name: "Claudeshell",
-            dependencies: ["ClaudeshellCore", .product(name: "SwiftTerm", package: "SwiftTerm")]
+            name: "Maestro",
+            dependencies: ["MaestroCore", .product(name: "SwiftTerm", package: "SwiftTerm")]
         ),
-        .testTarget(name: "ClaudeshellCoreTests", dependencies: ["ClaudeshellCore"]),
+        .testTarget(name: "MaestroCoreTests", dependencies: ["MaestroCore"]),
     ]
 )

@@ -33,7 +33,7 @@ Onder de tiles-balk komt een strook van een paar regels die bij het gekozen proj
 
 ### Problem Frame
 
-Claudeshell laat zien welk project wacht en brengt HP er snel heen. Eenmaal in een project dat een tijd stillag, begint het zoeken: wat deed ik hier het laatst, staat er nog iets ongepusht, zat ik midden in een plan of een build, en wat was de URL ook alweer. Het antwoord zit verspreid over het Claude-gesprek, `git status`, de `docs/`-folder en HP's geheugen.
+Maestro laat zien welk project wacht en brengt HP er snel heen. Eenmaal in een project dat een tijd stillag, begint het zoeken: wat deed ik hier het laatst, staat er nog iets ongepusht, zat ik midden in een plan of een build, en wat was de URL ook alweer. Het antwoord zit verspreid over het Claude-gesprek, `git status`, de `docs/`-folder en HP's geheugen.
 
 ### Key Decisions
 
@@ -43,7 +43,7 @@ Claudeshell laat zien welk project wacht en brengt HP er snel heen. Eenmaal in e
 - **De samenvatting staat direct in de strook.** Links de korte gegevens, rechts de samenvatting; de strook is daarom een paar regels hoog. (session-settled: user-directed, gekozen boven een strook van één regel met de samenvatting achter een klik.) Governs R1, R9.
 - **De strook is dicht te klikken en opent bij het starten van een project of op verzoek.** (session-settled: user-directed.) Governs R6, R7.
 - **Geen apart paneel.** Alles wat de strook biedt, staat in de strook zelf. De lijst met gewijzigde bestanden en niet-gepushte commits geeft `git status` in de shell-pane ernaast. Governs R8, R12.
-- **De samenvatting leunt op het gesprek en op de repo.** (session-settled: user-approved, gekozen boven alleen het gesprek of alleen de repo: zo komt ook werk in beeld dat nooit gecommit is, en werk dat buiten Claudeshell gebeurde.) Governs R10.
+- **De samenvatting leunt op het gesprek en op de repo.** (session-settled: user-approved, gekozen boven alleen het gesprek of alleen de repo: zo komt ook werk in beeld dat nooit gecommit is, en werk dat buiten Maestro gebeurde.) Governs R10.
 - **De samenvatting wordt gemaakt als het project stopt.** (session-settled: user-approved, gekozen boven maken bij openen en alleen op verzoek: ze staat er direct als HP terugkomt.) Governs R11.
 - **Een prompt klaarzetten terwijl Claude bezig is, vervalt.** Claude Code doet dat zelf al.
 
@@ -155,5 +155,5 @@ Deferred to Planning:
 ### Sources / Research
 
 - `docs/doel.md` en `docs/architecture.md`.
-- `docs/brainstorms/2026-11-22-claudeshell-requirements.md`: de statussen running, active en inactive, en het veld `website` per project.
+- `docs/brainstorms/2026-11-22-maestro-requirements.md`: de statussen running, active en inactive, en het veld `website` per project.
 - De hp-skills: ze laten sporen achter in `docs/brainstorms`, `docs/plans` en `docs/handoff`.

@@ -1,6 +1,6 @@
 # Architecture
 
-Claudeshell is a native Mac app that shows every Claude Code project as a tile: its icon with the name below it. The app finds the icons itself; a project without one shows its initials on its colour. A tile shows whether Claude is busy or waits for HP, and a click or shortcut opens the project with a shell on the left and Claude on the right. Below the tiles bar a strip shows the links, the git state, the workflow step and an AI summary of the selected project.
+Maestro is a native Mac app that shows every Claude Code project as a tile: its icon with the name below it. The app finds the icons itself; a project without one shows its initials on its colour. A tile shows whether Claude is busy or waits for HP, and a click or shortcut opens the project with a shell on the left and Claude on the right. Below the tiles bar a strip shows the links, the git state, the workflow step and an AI summary of the selected project.
 
 ## Two targets
 
@@ -8,14 +8,14 @@ The project is a Swift package (`Package.swift`, swift-tools 6.2, Swift 6 langua
 
 | Target | Role | Tests |
 |---|---|---|
-| `ClaudeshellCore` | All logic without UI | `swift test`, Swift Testing |
-| `Claudeshell` | The AppKit and SwiftUI app, on top of SwiftTerm `1.99.3` (exact pin) | Checked by hand in the built app |
+| `MaestroCore` | All logic without UI | `swift test`, Swift Testing |
+| `Maestro` | The AppKit and SwiftUI app, on top of SwiftTerm `1.99.3` (exact pin) | Checked by hand in the built app |
 
-`scripts/build-app.sh` builds the release binary, puts it with `Support/Info.plist` and `Support/Fonts/` in `build/Claudeshell.app` and signs it ad hoc. `./runlocal.sh` builds and opens the app. `scripts/install-app.sh` builds and copies the app to `/Applications/Claudeshell.app`, which is what the Dock icon starts.
+`scripts/build-app.sh` builds the release binary, puts it with `Support/Info.plist` and `Support/Fonts/` in `build/Maestro.app` and signs it ad hoc. `./runlocal.sh` builds and opens the app. `scripts/install-app.sh` builds and copies the app to `/Applications/Maestro.app`, which is what the Dock icon starts.
 
 The icon is drawn by `scripts/make-icon.swift`; `Support/AppIcon.icns` is its output in all icon sizes.
 
-### ClaudeshellCore
+### MaestroCore
 
 | File | What it holds |
 |---|---|
@@ -44,7 +44,7 @@ The icon is drawn by `scripts/make-icon.swift`; `Support/AppIcon.icns` is its ou
 | `SummaryQueue.swift` | The projects that wait for a summary, one at a time |
 | `ProjectInfoStore.swift` | The memory of the strip: the data per project, open or closed, and the moments for a summary |
 
-### Claudeshell
+### Maestro
 
 | File | What it holds |
 |---|---|
@@ -67,9 +67,9 @@ flowchart LR
     Tracker -- busy to waiting --> Sound[system sound]
 ```
 
-1. `SessionManager` starts Claude through `zsh -lic` with the command in `LaunchSpec.claudeCommand`. The environment carries `CLAUDESHELL_PANE` (a new id for every start), `CLAUDESHELL_EVENTS` and `CLAUDESHELL_SETTINGS`.
-2. Claude reads the hooks from `--settings "$CLAUDESHELL_SETTINGS"`. These are merged with the hooks in `~/.claude/settings.json`, which stays untouched.
-3. Every hook is `echo "$CLAUDESHELL_PANE <state>" >> "$CLAUDESHELL_EVENTS"`.
+1. `SessionManager` starts Claude through `zsh -lic` with the command in `LaunchSpec.claudeCommand`. The environment carries `MAESTRO_PANE` (a new id for every start), `MAESTRO_EVENTS` and `MAESTRO_SETTINGS`.
+2. Claude reads the hooks from `--settings "$MAESTRO_SETTINGS"`. These are merged with the hooks in `~/.claude/settings.json`, which stays untouched.
+3. Every hook is `echo "$MAESTRO_PANE <state>" >> "$MAESTRO_EVENTS"`.
 4. `AppDelegate` watches the events file with a `DispatchSource` on the main queue and hands new lines to `AttentionTracker`.
 5. The tracker is `@Observable`; the tiles bar redraws by itself. A pane that goes from busy to waiting plays the Glass sound.
 
@@ -183,19 +183,19 @@ The conversations of a project are the `.jsonl` files directly in `~/.claude/pro
 
 | Path | Content |
 |---|---|
-| `~/Library/Application Support/Claudeshell/projects.json` | Projects in the order they were added, with `status` active or inactive, and optionally `website`, `iconState` (`searched`, `custom` or `removed`) and `linkOverrides` (HP's own link per `live`, `localhost` and `git`; an empty text is a cleared link). Running and the selection are never stored. |
-| `~/Library/Application Support/Claudeshell/icons/` | The icon of a project as `<project id>.png` |
-| `~/Library/Application Support/Claudeshell/summaries/` | The summary of a project as `<project id>.json`: text, moment and fingerprint |
-| `~/Library/Application Support/Claudeshell/last-shown` | The id of the project in view; at the next start that project starts and is shown again |
-| `~/Library/Application Support/Claudeshell/projects.corrupt.json` | An unreadable `projects.json`, set aside |
-| `~/Library/Application Support/Claudeshell/hooks.json` | The generated hook settings, rewritten at every start |
-| `~/Library/Application Support/Claudeshell/events` | The events file, emptied at every start; `tail -f` shows the hooks live |
-| User defaults `nl.harmsen.claudeshell` | Window frame and divider position (AppKit autosave) |
+| `~/Library/Application Support/Maestro/projects.json` | Projects in the order they were added, with `status` active or inactive, and optionally `website`, `iconState` (`searched`, `custom` or `removed`) and `linkOverrides` (HP's own link per `live`, `localhost` and `git`; an empty text is a cleared link). Running and the selection are never stored. |
+| `~/Library/Application Support/Maestro/icons/` | The icon of a project as `<project id>.png` |
+| `~/Library/Application Support/Maestro/summaries/` | The summary of a project as `<project id>.json`: text, moment and fingerprint |
+| `~/Library/Application Support/Maestro/last-shown` | The id of the project in view; at the next start that project starts and is shown again |
+| `~/Library/Application Support/Maestro/projects.corrupt.json` | An unreadable `projects.json`, set aside |
+| `~/Library/Application Support/Maestro/hooks.json` | The generated hook settings, rewritten at every start |
+| `~/Library/Application Support/Maestro/events` | The events file, emptied at every start; `tail -f` shows the hooks live |
+| User defaults `nl.harmsen.maestro` | Window frame (AppKit autosave) and the divider position per project (`divider.<uuid>`, a share of the width) |
 
-The environment variable `CLAUDESHELL_SUPPORT` points the app at another folder instead of `~/Library/Application Support/Claudeshell`, for a test run that must not touch the real projects.
+The environment variable `MAESTRO_SUPPORT` points the app at another folder instead of `~/Library/Application Support/Maestro`, for a test run that must not touch the real projects.
 
 The first start (no `projects.json`) imports the projects from `~/.wezterm.lua` whose folder exists, as active tiles. After that the file always exists, so the import runs once.
 
 ## Logging
 
-Errors go to `os.Logger` with subsystem `Claudeshell`; a failed summary has the category `Summary`. Read them with `log stream --predicate 'subsystem == "Claudeshell"'`.
+Errors go to `os.Logger` with subsystem `Maestro`; a failed summary has the category `Summary`. Read them with `log stream --predicate 'subsystem == "Maestro"'`.

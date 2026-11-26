@@ -3,4 +3,4 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 scripts/build-app.sh
-open build/Claudeshell.app
+open build/Maestro.app

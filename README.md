@@ -1,6 +1,6 @@
-<img src="docs/icon.png" width="96" alt="Claudeshell icon">
+<img src="docs/icon.png" width="96" alt="Maestro icon">
 
-# Claudeshell
+# Maestro
 
 A native Mac terminal app for working on many Claude Code projects at once. Every project is a coloured tile in a bar. The tile shows whether Claude is busy or waiting for you, and one click or shortcut puts you in that project with a shell on the left and Claude on the right.
 
@@ -32,14 +32,14 @@ It was built to replace a WezTerm setup with one workspace per project, where a 
 ## Build and run
 
 ```sh
-./runlocal.sh             # build and open build/Claudeshell.app
+./runlocal.sh             # build and open build/Maestro.app
 scripts/install-app.sh    # build and install in /Applications
 swift test                # run the tests of the logic
 ```
 
 ## How it is put together
 
-A Swift package with two targets: `ClaudeshellCore` holds all logic and is covered by tests, `Claudeshell` is the AppKit and SwiftUI app on top of [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm). See [docs/architecture.md](docs/architecture.md) for the chain from hook to tile, the hook behaviour that was observed, and the files the app keeps on disk. The plan and requirements in `docs/` are in Dutch.
+A Swift package with two targets: `MaestroCore` holds all logic and is covered by tests, `Maestro` is the AppKit and SwiftUI app on top of [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm). See [docs/architecture.md](docs/architecture.md) for the chain from hook to tile, the hook behaviour that was observed, and the files the app keeps on disk. The plan and requirements in `docs/` are in Dutch.
 
 ## License
 
