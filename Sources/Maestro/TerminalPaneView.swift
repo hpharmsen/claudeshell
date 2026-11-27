@@ -52,6 +52,13 @@ final class TerminalPaneView: LocalProcessTerminalView {
         return true
     }
 
+    /// SwiftTerm has no context menu; a right click offers to copy the selection.
+    override func menu(for event: NSEvent) -> NSMenu? {
+        let menu = NSMenu()
+        menu.addItem(withTitle: "Kopiëren", action: #selector(copy(_:)), keyEquivalent: "")
+        return menu
+    }
+
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
@@ -60,6 +67,9 @@ final class TerminalPaneView: LocalProcessTerminalView {
     /// A slash command is no file: it goes to the prompt, without Enter, so it can still be edited.
     /// SwiftTerm refuses to open a file that can run; it goes to the prompt of the shell instead.
     override func requestOpenLink(source: TerminalView, request: TerminalLinkRequest) {
+        // A double or triple click selects the link and SwiftTerm then opens it too; selecting only selects.
+        // A plain click clears the selection first, so it still opens the link.
+        guard !selectionActive else { return }
         if !request.isExplicit, let command = spec.slashCommand(request.link) { return send(txt: command) }
         if !request.isExplicit, let shellPane, let command = spec.executableCommand(request.link) {
             shellPane.send(txt: command)
