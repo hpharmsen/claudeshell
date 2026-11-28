@@ -39,6 +39,7 @@ final class TerminalPaneView: LocalProcessTerminalView {
         optionAsMetaKeyForFunctionalKeys = true
         // SwiftTerm takes no drops; a dropped file pastes its path, as in Terminal.app.
         registerForDraggedTypes([.fileURL])
+        _ = Self.repeatMonitor
     }
 
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation { .copy }
@@ -66,6 +67,17 @@ final class TerminalPaneView: LocalProcessTerminalView {
     override func mouseUp(with event: NSEvent) { buttonsLocal { super.mouseUp(with: event) } }
     override func rightMouseDown(with event: NSEvent) { buttonsLocal { super.rightMouseDown(with: event) } }
     override func rightMouseUp(with event: NSEvent) { buttonsLocal { super.rightMouseUp(with: event) } }
+
+    /// A held letter repeats, as in WezTerm: the repeat skips the input system, which would show the accent menu.
+    /// SwiftTerm's keyDown is not open, so one monitor catches the repeats for the pane with the focus.
+    private static let repeatMonitor: Any? = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+        guard event.isARepeat, let pane = event.window?.firstResponder as? TerminalPaneView, !pane.hasMarkedText(),
+              event.modifierFlags.isDisjoint(with: [.command, .control]),
+              let text = event.characters, let first = text.unicodeScalars.first,
+              first.value >= 0x20, first.value != 0x7F, !(0xF700...0xF8FF).contains(first.value) else { return event }
+        pane.insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))
+        return nil
+    }
 
     private func buttonsLocal(_ body: () -> Void) {
         guard spec.kind == .claude else { return body() }
