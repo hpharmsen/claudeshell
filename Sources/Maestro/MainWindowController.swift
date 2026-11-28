@@ -103,9 +103,10 @@ final class MainWindowController: NSWindowController, NSSplitViewDelegate {
         return saved > 0 ? saved : 1.0 / 3
     }
 
-    /// Saves the divider of the selected project, only when HP drags it: AppKit then names the divider.
+    /// Saves the divider of the selected project, only when HP drags it; AppKit names the divider
+    /// on layout passes too, and at launch those left the Claude pane 0 px wide.
     func splitViewDidResizeSubviews(_ notification: Notification) {
-        guard notification.userInfo?["NSSplitViewDividerIndex"] != nil, let id = store.selectedID,
+        guard NSApp.currentEvent?.type == .leftMouseDragged, let id = store.selectedID,
               splitView.bounds.width > 0 else { return }
         UserDefaults.standard.set(slots[0].frame.width / splitView.bounds.width, forKey: Self.dividerKey(id))
     }
