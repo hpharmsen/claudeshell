@@ -59,6 +59,21 @@ final class TerminalPaneView: LocalProcessTerminalView {
         return menu
     }
 
+    // Claude Code takes the mouse, so a drag selected nothing and its release opened the link under it.
+    // In a Claude pane the buttons select, open links and show the menu; the wheel still scrolls Claude Code.
+    override func mouseDown(with event: NSEvent) { buttonsLocal { super.mouseDown(with: event) } }
+    override func mouseDragged(with event: NSEvent) { buttonsLocal { super.mouseDragged(with: event) } }
+    override func mouseUp(with event: NSEvent) { buttonsLocal { super.mouseUp(with: event) } }
+    override func rightMouseDown(with event: NSEvent) { buttonsLocal { super.rightMouseDown(with: event) } }
+    override func rightMouseUp(with event: NSEvent) { buttonsLocal { super.rightMouseUp(with: event) } }
+
+    private func buttonsLocal(_ body: () -> Void) {
+        guard spec.kind == .claude else { return body() }
+        allowMouseReporting = false
+        defer { allowMouseReporting = true }
+        body()
+    }
+
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
